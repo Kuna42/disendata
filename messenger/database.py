@@ -10,11 +10,16 @@ import os
 # class
 class DB:
     def __init__(self, db_name: str):
+        """
+        This Class is to store Chat, Member, Message in a database.
+
+        :param db_name: The name of the database what will be used
+        """
         self.__db_name = db_name
         if not os.path.exists(self.__db_name):  # TODO test if path is valid
             self.create()
 
-    def __execute(self, sql_instruction: str, param: tuple = None):
+    def __execute(self, sql_instruction: str, param: tuple = None): # needed?
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
             if param is not None:
@@ -92,7 +97,7 @@ class DB:
 
             sql_instructions = "INSERT INTO m_chat_member VALUES(?, ?);"
             for member in chat.member:  # TODO could be a MessageGroup from class Chat
-                db_cursor.execute(sql_instructions, (chat.name, member.id,))
+                db_cursor.execute(sql_instructions, (chat.name, member.id_,))
 
             db.commit()
 
@@ -123,21 +128,27 @@ class DB:
         :param message: a Message object
         :return:
         """
-        if type(message.chat) is not str:
+        if type(message.chat.name) is not str:
             raise ValueError("the message target table-name should be a String")
         if not message.chat.name.isalnum():
             raise ValueError("the target table-name must be alpha numeric")
 
-        sql_instructions = f"INSERT INTO {message.chat} VALUES(?, ?, ?);"
+        sql_instructions = f"INSERT INTO {message.chat.name} (member, timestamp, text) VALUES(?, ?, ?);"##
 
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
             db_cursor.execute(sql_instructions,
-                              (message.receiver, message.timestamp, message.text))
+                              (message.receiver.id_, message.timestamp, message.text))
 
             db.commit()
 
     def new_self(self, member: Member):
+        """
+        Add a Member which contains self in the database
+
+        :param member: the Member what represent self
+        :return:
+        """
         sql_instructions = "SELECT id FROM m_member WHERE id = 0;"
 
         with sql_connect(self.__db_name) as db:
@@ -156,17 +167,27 @@ class DB:
                                                      member.name_generic, member.crypt_hash))
 
     def has_chat(self, chat: Chat) -> bool:
+        """
+        Check, if the Chat exists in the database
+
+        :param chat: the .name is necessary for finding the right chat
+        :return:
+        """
         sql_instructions = "SELECT table_name FROM m_chats WHERE table_name = ?;"
 
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
             db_cursor.execute(sql_instructions, (chat.name,))
             request = db_cursor.fetchall()
-            if request:
-                return True
-        return False
+        return bool(request)
 
     def has_member(self, member: Member) -> bool:
+        """
+        Check, if the Member exists in the database
+
+        :param member: the id_ is necessary to find the member
+        :return:
+        """
         sql_instructions = "SELECT * FROM m_chats WHERE name_self = ? OR name_given = ? OR name_generic = ?;"
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
@@ -177,6 +198,12 @@ class DB:
         return False
 
     def member_in_chats(self, member: Member) -> [Chat]:
+        """
+        Select every Chat, where the member is a part of
+
+        :param member: member what is the search-key
+        :return: return a list of Chats
+        """
         sql_instructions = "SELECT * FROM (SELECT chat_table_name FROM m_chat_member WHERE member_id = ?) " \
                            "LEFT JOIN m_chats"
 
@@ -187,29 +214,60 @@ class DB:
 
         chat_list = []
         for chat in request:
-            chat_list.append(Chat(chat[0], members=[member]))
-
+            chat_list.append(Chat(name=chat[0], members=[member]))
         return chat_list
 
-    def read_message(self, chat, __timestamp) -> Message:
-        sql_instructions = "SELECT * FROM ? WHERE timestamp = ?;"
+    def read_message(self, chat: Chat, _timestamp) -> Message or None:
+        """
+        Give a Message or None based on a timestamp
+        :param chat: in what Chat should be the message
+        :param _timestamp: the date of the receiving
+        :return: a Message or None if none message with the timestamp was found
+        """
+        if not chat.name.isalnum():
+            raise ValueError("The name of the Chat should be Alpha Numeric")
+        sql_instructions = f"SELECT * FROM {chat.name} WHERE timestamp = ?;"
 
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
-            db_cursor.execute(sql_instructions, (chat.name, __timestamp))
+            db_cursor.execute(sql_instructions, (_timestamp,))
             request = db_cursor.fetchall()
-            print(request)
+        if not request:
+            return None
+        request = request[0]  # only the first message with this timestamp
+        return Message(text=request[3], to_member=Member(id_=request[1]), chat=chat, _timestamp=request[2])
 
     def read_chat(self, chat: Chat, count: int = 20) -> [Message]:
-        pass
+        """
+        Read a Chat and returns all (counted) Messages
 
-    def open_chats(self, count: int = 0) -> [Chat]:
-        sql_instructions = "SELECT table_name, display_name, info FROM m_chats"
-        if count != 0: # possible remove
-            sql_instructions += f" ORDER BY id ASC LIMIT {count};"
-        else:
-            sql_instructions += ";"
+        :param chat: the Chat what are read
+        :param count: how many Messages should be returned
+        :return: returned a list of Messages
+        """
+        if not chat.name.isalnum():
+            raise ValueError("The name of the Chat should be Alpha Numeric")
+        sql_instructions = f"SELECT * FROM {chat.name} ORDER BY timestamp DESC LIMIT {count};"
 
+        with sql_connect(self.__db_name) as db:
+            db_cursor = db.cursor()
+            db_cursor.execute(sql_instructions)
+            request = db_cursor.fetchall()
+        if not request:
+            return []
+        message_list = []
+        for message in request:
+            message_list.append(Message(text=message[3], to_member=Member(id_=message[1]),
+                                        chat=chat, _timestamp=message[2]))
+        return message_list
+
+    def open_chats(self) -> [Chat]:
+        """
+        Gives a list of all existing Chats, this is at the beginning useful
+
+        :return: a list of all Chats
+        """
+        sql_instructions = "SELECT table_name, display_name, info FROM m_chats;"
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
             db_cursor.execute(sql_instructions)
@@ -223,16 +281,17 @@ class DB:
             member_list = []
             for m_chat_member in request_2:
                 if m_chat_member[0] == chat[0]:
-                    member_list.append(Member(("", 0), id_=m_chat_member[1]))
+                    member_list.append(Member(id_=m_chat_member[1]))
             chat_list.append(Chat(name=chat[0], display_name=chat[1], info=chat[2], members=member_list))
         return chat_list
 
-    def open_members(self, count: int = 0) -> [Member]:
-        sql_instructions = "SELECT * FROM m_member"
-        if count != 0: # possible remove
-            sql_instructions += f" ORDER BY id ASC LIMIT {count};"
-        else:
-            sql_instructions += ";"
+    def open_members(self) -> [Member]:
+        """
+        Gives a list of all registered members, this is at the beginning useful
+
+        :return: a list of all members
+        """
+        sql_instructions = "SELECT * FROM m_member;"
 
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
@@ -241,17 +300,20 @@ class DB:
 
         member_list = []
         for member in request:
-            member_list.append(Member(address=("", 0), id_=member[0], name_self=member[1], name_given=member[2],
+            member_list.append(Member(id_=member[0], name_self=member[1], name_given=member[2],
                                       name_generic=member[3], cryptic_hash=member[4]))
         return member_list
 
     def update(self):
-        sql_instructions = "VACUUM;"
+        """
+        Cut the database to a smaller one if possible
 
+        :return:
+        """
+        sql_instructions = "VACUUM;"
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
             db_cursor.execute(sql_instructions)
-
             db.commit()
 
 
@@ -269,9 +331,11 @@ if __name__ == "__main__":
                     print("id:  \t" + str(_member.id_) + "\nself:\t" +
                           _member.name_self + "\ngiven:\t" + _member.name_given)
             elif inp == "t":
-                print(database.read_message(Chat(input("Chatname: "), members=[]), __timestamp=input("Timestamp: ")))
+                print(database.read_message(Chat(name=input("Chatname: "), members=[]),
+                                            _timestamp=input("Timestamp: ")))
             elif inp == "c":
-                print(database.read_chat(Chat(input("Chatname: "), members=[])))
+                for _message in database.read_chat(Chat(name=input("Chatname: "), members=[])):
+                    print(_message.text)
         elif inp == "list":
             inp = input("What type do you want to list? (m: member, c: chat)")
             if inp == "m":
@@ -280,22 +344,24 @@ if __name__ == "__main__":
                           _member.name_self + "\ngiven:\t" + _member.name_given)
             elif inp == "c":
                 for _chat in database.open_chats():
-                    print("Chatname:\t\t" + _chat.name + "\nDisplayname:\t" + _chat.display_name + "\nInformation:\t" + _chat.info)
+                    print("Chatname:\t\t" + _chat.name + "\nDisplayname:\t" + _chat.display_name +
+                          "\nInformation:\t" + _chat.info)
                 print()
         elif inp == "insert":
             inp = input("What type do you want to insert? (m: member, t: message, c: chat)")
             if inp == "m":
                 if input("self? (Y/N)") == "Y":
-                    database.new_self(Member(("", 0), name_self=input("Your name: "),
+                    database.new_self(Member(address=("", 0), name_self=input("Your name: "),
                                              name_given=input("Your name for others: "),
                                              name_generic="self"))
-                database.new_member(Member(("", 0), name_self=input("Members name: "),
+                database.new_member(Member(address=("", 0), name_self=input("Members name: "),
                                            name_given=input("Members name for others: "),
                                            name_generic=input("Generic name: ")))
             elif inp == "t":
                 database.new_message(Message(chat=Chat(name=input("Chatname: "), members=[]),
-                                             to_member=Member(("", 0)), text=bytes(input("the Text of the Message: "))))
+                                             to_member=Member(address=("", 0)),
+                                             text=bytes(input("the Text of the Message: "), "utf-8")))
             elif inp == "c":
-                database.new_chat(Chat(name=input("Chat name: "), members=[Member(("", 0))],
+                database.new_chat(Chat(name=input("Chat name: "), members=[Member(address=("", 0))],
                                        display_name=input("Shown name: "), info=input("Information about the chat: ")))
         inp = input(">>>")

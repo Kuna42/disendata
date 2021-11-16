@@ -7,17 +7,19 @@ from messenger.static_variables import S
 # classes
 class Member(BaseAddClass):
     def __new__(cls, *args, **kwargs):
-        print("a")
-        if "id_" not in kwargs.keys():
-            print("b")
-            kwargs["id_"] = len(object_library[cls]) + 100  # TODO could be better
-            print(kwargs["id_"])
-        print("c")
-        return super().__new__(cls, identification_attribute="id_", args=args, kwargs=kwargs)
+        identify_attr = "id_"
+        if "identification_attribute" in kwargs.keys():
+            if kwargs["identification_attribute"] in ("id_", "name_self", "address", "name_generic"):
+                identify_attr = kwargs["identification_attribute"]
 
-    def __init__(self, address: tuple,
+        if identify_attr not in kwargs.keys():
+            kwargs[identify_attr] = len(object_library[cls]) + 100  # TODO could be better
+        return super().__new__(cls, *args, identification_attribute=identify_attr, **kwargs)
+
+    def __init__(self, *, address: tuple = ("", 0),
                  id_: int = 0, name_self: str = "", name_given: str = "",
-                 name_generic: str = "", cryptic_hash: str = ""):
+                 name_generic: str = "", cryptic_hash: str = "",
+                 identification_attribute: str = "id_"):
         self.id_ = id_
         self.name_self = name_self
         self.name_given = name_given
@@ -74,10 +76,18 @@ class MemberGroup:
 
 class Chat(BaseAddClass):
     def __new__(cls, *args, **kwargs):
-        return super().__new__(cls, identification_attribute="name", args=args, kwargs=kwargs)
+        identify_attr = "name"
+        if "identification_attribute" in kwargs.keys():
+            if kwargs["identification_attribute"] in ("name", "display_name"):
+                identify_attr = kwargs["identification_attribute"]
 
-    def __init__(self, name, members: [Member],
-                 display_name: str = "", info: str = ""):
+        if identify_attr not in kwargs.keys():
+            kwargs[identify_attr] = len(object_library[cls]) + 100  # TODO could be better
+        return super().__new__(cls, *args, identification_attribute=identify_attr, **kwargs)
+
+    def __init__(self, *, name, members: [Member] = [],
+                 display_name: str = "", info: str = "",
+                 identification_attribute: str = "name"):
         self.name = name
         self.member = members  # [Member]
         self.display_name = display_name
@@ -85,11 +95,13 @@ class Chat(BaseAddClass):
 
 
 class Message:
-    def __init__(self, text: bytes, to_member: Member, chat: Chat, m_type="msg"):
+    def __init__(self, text: bytes, to_member: Member, chat: Chat, m_type="msg", _timestamp: str = ""):
         self.text = text
         self.receiver = to_member
         self.chat = chat
-        self.__timestamp = 0  # TODO timestamp muss eingefügt werden
+        if not _timestamp:
+            pass  # TODO timestamp muss eingefügt werden
+        self.__timestamp = _timestamp
 
         if m_type in S.MSG_START.keys():
             self.m_type = m_type
@@ -103,22 +115,6 @@ class Message:
     @property
     def timestamp(self):
         return self.__timestamp
-
-
-class Tunnel: # probably not necessary
-    def __init__(self):
-        self.__dict = dict()
-
-    def get(self, obj: object, standard_sort_key="id") -> object:
-        for element in self.__dict[type(obj)]:
-            if getattr(element, standard_sort_key) == getattr(obj, standard_sort_key):
-                obj = self.__dict[type(obj)] + obj  # the object overwrites the object in the list
-
-    def add_object_list(self, _class) -> bool:
-        if _class in self.__dict.keys():
-            return False
-        self.__dict[_class] = []
-        return True
 
 
 class Messenger:

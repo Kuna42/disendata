@@ -12,16 +12,18 @@ object_library = {}
 # classes
 class BaseAddClass(ABC):
     @abstractmethod
-    def __new__(cls, identification_attribute: str, *args, **kwargs):
+    def __new__(cls, *args, identification_attribute: str, **kwargs):
         for obj in object_library[cls]:
             if getattr(obj, identification_attribute) == kwargs[identification_attribute]:
                 # set attributes
+                for attribute in kwargs:
+                    setattr(obj, attribute, kwargs[attribute])
                 return obj
         obj = super().__new__(cls)
         object_library[cls].append(obj)
         return obj
 
-    def __add__(self, other):
+    def __add__(self, other):  # TODO probably remove able
         """
         self + other
 
