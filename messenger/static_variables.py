@@ -2,7 +2,7 @@
 # import
 
 # variables
-__name = "messenger"
+__name = "disendata_messenger"
 __version = "0.0.1"
 __author = "Kuna42"
 __www = "kuna42@web.de"
@@ -10,10 +10,15 @@ __copyright = "(C) 2021"
 __licence = "MIT"
 
 
-def information():
-    return __name + "-" + __version + " written by " + __author + \
-           " under the licence " + __licence + " " + __copyright + \
-           ". Can be contacted on " + __www + "."
+def information() -> str:
+    """
+    Returns all static information in a string
+
+    :return: str
+    """
+    return (__name + "-" + __version + " written by " + __author +
+            " under the licence " + __licence + " " + __copyright +
+            ". Can be contacted on " + __www + ".")
 
 
 # class

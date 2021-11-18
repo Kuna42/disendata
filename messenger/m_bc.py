@@ -45,10 +45,15 @@ class Member(BaseAddClass):
 
 
 class MemberGroup:
-    def __init__(self, *members):
+    def __init__(self, *members: Member, sort_key: str = "actual_ip"):
         self.name = ""  # name of the session
         self.self_ip = ""
         self.group = {}
+        if sort_key not in ("actual_ip", "address", "id_", "name_generic"):
+            sort_key = "actual_ip"
+        self.sort_key = sort_key
+        for member in members:
+            self.new_member(member)
 
     def __add__(self, other):
         """
@@ -66,12 +71,16 @@ class MemberGroup:
         new_group.name = other.name
         new_group = self.group#
         new_group.update(other.group)#
+        self.group = new_group
+        return self
 
-    def has_member(self, name: str) -> bool:
-        return name in self.group.keys()
+    def has_member(self, name: Member or str) -> bool:
+        if type(name) is str:
+            return name in self.group.keys()
+        return getattr(name, self.sort_key) in self.group.keys()
 
     def new_member(self, member: Member):
-        self.group[member.actual_ip] = member
+        self.group[getattr(member, self.sort_key)] = member
 
 
 class Chat(BaseAddClass):
