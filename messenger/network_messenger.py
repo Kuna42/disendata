@@ -5,10 +5,12 @@ from threading import Thread
 import socket
 import os
 
-from messenger.m_bc import Member, MemberGroup, Message, Chat
-from messenger.static_variables import S
+from messenger.m_bc import Member, MemberGroup, Message, Chat, Event
+from messenger.variables import S, running
 from messenger.database import DB
 
+
+# variables
 
 # classes
 class NetworkMessenger(Thread):
@@ -27,13 +29,15 @@ class NetworkMessenger(Thread):
         if not (db_name.startswith("/") or db_name.startswith("~")):
             raise SyntaxError("db_name should be a complete path like /tmp/test.db")
         if db_name.split("/")[1] not in ["tmp", "home", "etc", ".disendata"]:
-            # if the db was in a global directory or in a local like ".didendata"
+            # if the db was in a global directory or in a local like ".disendata"
             raise PermissionError(f"You can't open this database {db_name}")
         if not os.path.exists(db_name):
             if not os.path.exists("/".join(db_name.split("/")[:-1])):##
                 raise FileNotFoundError("This File does not exists.")
 
         self.db = DB(db_name=db_name)
+        self.db.open_members()
+        self.db.open_chats()
 
         self.sockets = socket.socket(
             socket.AF_INET,
@@ -81,7 +85,8 @@ class NetworkMessenger(Thread):
 
         if message_txt[2] == S.MSG_START["cmd"]:
             cmd = message_txt[message_txt.index(S.MSG_START["separator"]):]
-            self.msg_command(cmd)
+            self.msg_command(Message(text=cmd, sender=Member(id_=0),
+                                     chat=Chat(name="")))
         elif message_txt[2] == S.MSG_START["tmp"]:
             pass
         elif message_txt[2] == S.MSG_START["data"]:
@@ -89,17 +94,24 @@ class NetworkMessenger(Thread):
         elif message_txt[2] == S.MSG_START["msg"]:
             message_txt = message_txt[2:]
             return Message(self.msg_encrypt(message_txt), chat=Chat(name=""),
-                           to_member=Member(address=address, identification_attribute="address"))
+                           sender=Member(address=address, identification_attribute="address"))
 
         # self.check_message(Message(message_txt, Member(address)))
         return Message(message_txt, Member(address=address, identification_attribute="address"),
                        chat=Chat(name=""))  # TODO
 
-    def msg_command(self, command: bytes):
+    def msg_command(self, message: Message):
+        command = message.text
         if command not in S.CMD:
             raise ValueError(f"This command \"{command}\" does not exists")
         if command == S.CMD["connection"]:
+            Event(action_type="if_decide", content={}) # TODO
+        elif command == S.CMD["connection accept"]:
             pass
+        elif command == S.CMD["information"]:
+            pass
+        elif command == S.CMD["close"]:
+            self.online_members.group.remove(message.receiver)
 
     def msg_encrypt(self, msg: bytes) -> bytes:
         return msg
@@ -118,5 +130,5 @@ class NetworkMessenger(Thread):
         self.send(message)
 
     def run(self) -> None:
-        while True:
+        while running:
             msg = self.reversiere()

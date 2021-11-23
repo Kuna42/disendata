@@ -1,12 +1,11 @@
 #!/usr/bin/env python3
 
 # import
+from messenger.variables import object_library
+
 from abc import ABC, abstractmethod
 
 # variables
-# globals
-global object_library
-object_library = {}
 
 
 # classes
@@ -50,6 +49,10 @@ class Interface(ABC):
 
     @abstractmethod
     def show_msg(self):
+        pass
+
+    @abstractmethod
+    def get_db_name(self):
         pass
 
     @abstractmethod

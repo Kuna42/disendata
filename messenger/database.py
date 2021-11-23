@@ -73,6 +73,8 @@ class DB:
         """
         Add a new table to the db with the name of the chat
 
+        chat-name(msg_id, member_sender, member_receiver, timestamp, text)
+
         :param chat: Chat what should be added to the db
         :return:
         """
@@ -82,7 +84,8 @@ class DB:
             raise ValueError("the table name must be alpha numeric")
         sql_instructions = f"CREATE TABLE IF NOT EXISTS {chat.name} (" \
                            f"msg_id                    INTEGER PRIMARY KEY AUTOINCREMENT," \
-                           f"member                    INTEGER," \
+                           f"member_sender             INTEGER," \
+                           f"member_receiver           INTEGER" \
                            f"timestamp                 DATE," \
                            f"text                      TEXT" \
                            f");"
@@ -133,12 +136,13 @@ class DB:
         if not message.chat.name.isalnum():
             raise ValueError("the target table-name must be alpha numeric")
 
-        sql_instructions = f"INSERT INTO {message.chat.name} (member, timestamp, text) VALUES(?, ?, ?);"##
+        sql_instructions = f"INSERT INTO {message.chat.name} " \
+                           f"(member_sender, member_receiver, timestamp, text) VALUES(?, ?, ?, ?);"##
 
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
             db_cursor.execute(sql_instructions,
-                              (message.receiver.id_, message.timestamp, message.text))
+                              (message.sender.id_, message.receiver.id_, message.timestamp, message.text))
 
             db.commit()
 
@@ -235,7 +239,8 @@ class DB:
         if not request:
             return None
         request = request[0]  # only the first message with this timestamp
-        return Message(text=request[3], to_member=Member(id_=request[1]), chat=chat, _timestamp=request[2])
+        return Message(text=request[4], sender=Member(id_=request[1]), to_member=Member(id_=request[2]),
+                       chat=chat, _timestamp=request[3])
 
     def read_chat(self, chat: Chat, count: int = 20) -> [Message]:
         """
@@ -257,8 +262,8 @@ class DB:
             return []
         message_list = []
         for message in request:
-            message_list.append(Message(text=message[3], to_member=Member(id_=message[1]),
-                                        chat=chat, _timestamp=message[2]))
+            message_list.append(Message(text=message[4], sender=Member(id_=message[1]),
+                                        to_member=Member(id_=message[2]), chat=chat, _timestamp=message[3]))
         return message_list
 
     def open_chats(self) -> [Chat]:
@@ -315,53 +320,3 @@ class DB:
             db_cursor = db.cursor()
             db_cursor.execute(sql_instructions)
             db.commit()
-
-
-# for testing the db
-if __name__ == "__main__":
-    database = DB(input("Database location: "))
-    inp = "help"
-    while inp != "exit":
-        if inp == "help":
-            print("Commands:\n\thelp\n\tread\n\tlist\n\tinsert\n\texit\n")
-        elif inp == "read":
-            inp = input("What type do you want to read? (m: member, t: message, c: chat)")
-            if inp == "m":
-                for _member in database.open_members():
-                    print("id:  \t" + str(_member.id_) + "\nself:\t" +
-                          _member.name_self + "\ngiven:\t" + _member.name_given)
-            elif inp == "t":
-                print(database.read_message(Chat(name=input("Chatname: "), members=[]),
-                                            _timestamp=input("Timestamp: ")))
-            elif inp == "c":
-                for _message in database.read_chat(Chat(name=input("Chatname: "), members=[])):
-                    print(_message.text)
-        elif inp == "list":
-            inp = input("What type do you want to list? (m: member, c: chat)")
-            if inp == "m":
-                for _member in database.open_members():
-                    print("id:  \t" + str(_member.id_) + "\nself:\t" +
-                          _member.name_self + "\ngiven:\t" + _member.name_given)
-            elif inp == "c":
-                for _chat in database.open_chats():
-                    print("Chatname:\t\t" + _chat.name + "\nDisplayname:\t" + _chat.display_name +
-                          "\nInformation:\t" + _chat.info)
-                print()
-        elif inp == "insert":
-            inp = input("What type do you want to insert? (m: member, t: message, c: chat)")
-            if inp == "m":
-                if input("self? (Y/N)") == "Y":
-                    database.new_self(Member(address=("", 0), name_self=input("Your name: "),
-                                             name_given=input("Your name for others: "),
-                                             name_generic="self"))
-                database.new_member(Member(address=("", 0), name_self=input("Members name: "),
-                                           name_given=input("Members name for others: "),
-                                           name_generic=input("Generic name: ")))
-            elif inp == "t":
-                database.new_message(Message(chat=Chat(name=input("Chatname: "), members=[]),
-                                             to_member=Member(address=("", 0)),
-                                             text=bytes(input("the Text of the Message: "), "utf-8")))
-            elif inp == "c":
-                database.new_chat(Chat(name=input("Chat name: "), members=[Member(address=("", 0))],
-                                       display_name=input("Shown name: "), info=input("Information about the chat: ")))
-        inp = input(">>>")

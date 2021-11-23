@@ -1,7 +1,46 @@
 
 # import
 
+#from messenger.m_bc import ThreadObjectLibrary
+class ThreadObjectLibrary:
+    def __init__(self):
+        self.network = None
+        self.events = None
+        self.interface = None
+# imported
+
+
+# global variable
+global object_library
+object_library = {}
+
+global thread_objects
+thread_objects = ThreadObjectLibrary()
+
+global running
+running = True
+
+
 # variables
+event_actions = {  # TODO could be better
+    "msg_cmd": None,
+    "msg_show": None,
+    "msg_send": None,
+    "msg_load": None,
+    "chat_load": None,
+    "chat_new": None,
+    "member_new": None,
+    "member_load": None,
+    "if_decide": None,
+    "self_stuff": None,
+    "self_new": None,
+    "version": None,
+    "new_online": None,
+    "update_db": None,
+}
+
+
+# private variables
 __name = "disendata_messenger"
 __version = "0.0.1"
 __author = "Kuna42"
@@ -36,9 +75,13 @@ class S:
         "data": b"d\t",  # is used for data packs
         "separator": b";",  # is used to separate the indicator from the message
     }
-    CMD = {
+    CMD = {  # commands as a part of every message
         "connection": b"c",
         "connection accept": b"a",
         "information": b"i",
         "close": b"\n",
     }
+
+
+if __name__ == "__main__":
+    print("Variables: ...")

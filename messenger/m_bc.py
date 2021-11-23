@@ -1,7 +1,7 @@
 
 # import
-from messenger.m_abc import BaseAddClass, object_library
-from messenger.static_variables import S
+from messenger.m_abc import BaseAddClass
+from messenger.variables import S, object_library, thread_objects
 
 
 # classes
@@ -104,9 +104,13 @@ class Chat(BaseAddClass):
 
 
 class Message:
-    def __init__(self, text: bytes, to_member: Member, chat: Chat, m_type="msg", _timestamp: str = ""):
+    def __init__(self, text: bytes, sender: Member, chat: Chat,
+                 to_member: Member = None, m_type="msg", _timestamp: str = ""):
+        if to_member is None:
+            to_member = Member(id_=0)
         self.text = text
         self.receiver = to_member
+        self.sender = sender
         self.chat = chat
         if not _timestamp:
             pass  # TODO timestamp muss eingefügt werden
@@ -128,6 +132,26 @@ class Message:
 
 class Messenger:
     pass
+
+
+class ThreadObjectLibrary:
+    def __init__(self):
+        self.network = None
+        self.events = None
+        self.interface = None
+
+
+class Event:
+    def __init__(self, action_type: str, content: dict, _is_done: bool = False):
+        self.type = ""
+        self.content = content
+        self.action_type = action_type
+        self._is_done = _is_done
+
+        thread_objects.events.append(self)  # TODO possible here or somewhere else?
+
+    def done(self) -> bool:
+        return self._is_done
 
 
 object_library[Member] = []
