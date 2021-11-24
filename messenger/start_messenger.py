@@ -23,7 +23,7 @@ def fill_event_actions():  # TODO could be better
     event_actions["chat_new"] = None
     event_actions["member_new"] = None
     event_actions["member_load"] = None
-    event_actions["if_decide"] = None
+    event_actions["if_decide"] = thread_objects.interface.decide
     event_actions["self_stuff"] = None
     event_actions["self_new"] = None
     event_actions["version"] = information
