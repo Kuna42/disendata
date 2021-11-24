@@ -4,6 +4,7 @@
 from messenger.variables import object_library
 
 from abc import ABC, abstractmethod
+from threading import Thread
 
 # variables
 
@@ -42,17 +43,49 @@ class BaseAddClass(ABC):
         return self
 
 
-class Interface(ABC):
+class Interface(ABC, Thread):
     @abstractmethod
     def __init__(self):
+        super(Interface, self).__init__()
+
+    @abstractmethod
+    def input(self) -> str:
         pass
 
     @abstractmethod
-    def show_msg(self):
+    def decide(self, event) -> bool:
         pass
 
     @abstractmethod
-    def get_db_name(self):
+    def get_db_name(self) -> str:
+        pass
+
+    @abstractmethod
+    def show_msg(self, message):
+        pass
+
+    @abstractmethod
+    def show_chat(self, chat):
+        pass
+
+    @abstractmethod
+    def show_member(self, member):
+        pass
+
+    @abstractmethod
+    def show_chat_list(self, chat_list: list):
+        pass
+
+    @abstractmethod
+    def show_member_list(self, member_list: list):
+        pass
+
+    @abstractmethod
+    def show_self(self):
+        pass
+
+    @abstractmethod
+    def commands(self, input_cmd: str):
         pass
 
     @abstractmethod

@@ -37,6 +37,7 @@ event_actions = {  # TODO could be better
     "version": None,
     "new_online": None,
     "update_db": None,
+    "send_cmd": None,
 }
 
 

@@ -85,7 +85,7 @@ class NetworkMessenger(Thread):
 
         if message_txt[2] == S.MSG_START["cmd"]:
             cmd = message_txt[message_txt.index(S.MSG_START["separator"]):]
-            self.msg_command(Message(text=cmd, sender=Member(id_=0),
+            self.msg_command(Message(text=cmd, sender=Member(address=address, identification_attribute="address"),
                                      chat=Chat(name="")))
         elif message_txt[2] == S.MSG_START["tmp"]:
             pass
@@ -104,12 +104,17 @@ class NetworkMessenger(Thread):
         command = message.text
         if command not in S.CMD:
             raise ValueError(f"This command \"{command}\" does not exists")
+        # check, what command it is, todo can be in 3.10 with match case
         if command == S.CMD["connection"]:
             Event(action_type="if_decide", content={}) # TODO
+
         elif command == S.CMD["connection accept"]:
-            pass
+            self.online_members.new_member(member=message.sender)
+
         elif command == S.CMD["information"]:
-            pass
+            self.send(message=Message(sender=Member(id_=0), to_member=message.sender, chat=message.chat,
+                                      text=()))
+
         elif command == S.CMD["close"]:
             self.online_members.group.remove(message.receiver)
 

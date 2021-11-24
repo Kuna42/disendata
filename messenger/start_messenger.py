@@ -29,6 +29,7 @@ def fill_event_actions():  # TODO could be better
     event_actions["version"] = information
     event_actions["new_online"] = thread_objects.network.new_member
     event_actions["update_db"] = None
+    event_actions["send_cmd"] = thread_objects.network.send
 
 
 fill_event_actions()
