@@ -2,11 +2,13 @@
 # import
 from messenger.m_abc import Interface
 from messenger.m_bc import Member, Message, Chat, Event
+from messenger.variables import running
 
 
 # classes
 class Terminal(Interface):
     def __init__(self):
+        super(Terminal, self).__init__()
         self.typing_start = ">"
 
     def input(self) -> str:
@@ -20,7 +22,7 @@ class Terminal(Interface):
         pass
 
     def get_db_name(self) -> str:
-        pass
+        return "/tmp/test.db"
 
     def show_msg(self, message: Message):
         pass
@@ -41,7 +43,10 @@ class Terminal(Interface):
         pass
 
     def commands(self, input_cmd: str):
-        pass
+        # todo this can be in 3.10 with match case
+        if input_cmd == "exit":
+            running = False
 
     def run(self):
-        pass
+        while running:
+            self.commands(self.input())

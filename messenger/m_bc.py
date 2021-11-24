@@ -131,6 +131,9 @@ class Message:
 
 
 class Messenger:
+    def start(self):
+        self.run()
+
     def run(self):
         thread_objects.network.start()
         thread_objects.events.start()
