@@ -7,8 +7,28 @@ class ThreadObjectLibrary:
         self.network = None
         self.events = None
         self.interface = None
+
+    def start(self):
+        self.network.name = "network-Thread"
+        self.events.name = "event-Thread"
+        self.interface.name = "interface-Thread"
+        self.network.start()
+        self.events.start()
+        self.interface.start()
+
+
 # imported
 
+class Running:
+    def __init__(self, __running: bool = True):
+        self.running = __running
+
+    def __bool__(self):
+        return self.running
+
+    def stop(self):
+        self.running = False
+        # TODO add stopping all threads
 
 # global variable
 global object_library
@@ -18,27 +38,39 @@ global thread_objects
 thread_objects = ThreadObjectLibrary()
 
 global running
-running = True
+running = Running()  # could be different
 
 
 # variables
-event_actions = {  # TODO could be better
-    "msg_cmd": None,
-    "msg_show": None,
-    "msg_send": None,
-    "msg_load": None,
-    "chat_load": None,
-    "chat_new": None,
-    "member_new": None,
-    "member_load": None,
-    "if_decide": None,
-    "self_stuff": None,
-    "self_new": None,
-    "version": None,
-    "new_online": None,
-    "update_db": None,
-    "send_cmd": None,
-}
+event_actions = {}
+
+
+def fill_event_actions():  # TODO could be better
+    from messenger.events import (EventVersion, EventUpdateDB, EventSelfUpdate,
+                                  EventInterfaceDecide, EventSend, EventNewMember,
+                                  EventMsgCmd, EventMsgShow, EventMsgSend, EventMsgLoad)
+
+    event_actions.clear()
+    event_actions.update({
+        EventMsgCmd: thread_objects.network.msg_command,
+        EventMsgShow: thread_objects.interface.show_msg,
+        EventMsgSend: thread_objects.network.send_message,
+        EventMsgLoad: thread_objects.network.load_message,
+        "chat_load": None,
+        "chat_new": None,
+        "member_new": None,
+        "member_load": None,
+        EventInterfaceDecide: thread_objects.interface.decide,  # decide_options: dict of str: method
+        "self_stuff": None,
+        EventSelfUpdate: None,
+        EventVersion: information,
+        EventNewMember: thread_objects.network.new_member,
+        EventUpdateDB: None,
+        EventSend: thread_objects.network.send,
+    })
+
+
+connection = [("", 36000)]
 
 
 # private variables

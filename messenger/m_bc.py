@@ -10,7 +10,7 @@ class Member(BaseAddClass):
         identify_attr = "id_"
         if "identification_attribute" in kwargs.keys():
             if kwargs["identification_attribute"] in ("id_", "name_self", "address", "name_generic"):
-                identify_attr = kwargs["identification_attribute"]
+                identify_attr = kwargs.pop("identification_attribute")
 
         if identify_attr not in kwargs.keys():
             kwargs[identify_attr] = len(object_library[cls]) + 100  # TODO could be better
@@ -135,9 +135,7 @@ class Messenger:
         self.run()
 
     def run(self):
-        thread_objects.network.start()
-        thread_objects.events.start()
-        thread_objects.interface.start()
+        thread_objects.start()
 
 
 class ThreadObjectLibrary:
@@ -146,18 +144,13 @@ class ThreadObjectLibrary:
         self.events = None
         self.interface = None
 
-
-class Event:
-    def __init__(self, action_type: str, content: dict, _is_done: bool = False):
-        self.type = ""
-        self.content = content
-        self.action_type = action_type
-        self._is_done = _is_done
-
-        thread_objects.events.append(self)  # TODO possible here or somewhere else?
-
-    def done(self) -> bool:
-        return self._is_done
+    def start(self):
+        self.network.name = "network-Thread"
+        self.events.name = "event-Thread"
+        self.interface.name = "interface-Thread"
+        self.network.start()
+        self.events.start()
+        self.interface.start()
 
 
 object_library[Member] = []

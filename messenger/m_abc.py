@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 # import
-from messenger.variables import object_library
+from messenger.variables import object_library, thread_objects
 
 from abc import ABC, abstractmethod
 from threading import Thread
@@ -13,6 +13,13 @@ from threading import Thread
 class BaseAddClass(ABC):
     @abstractmethod
     def __new__(cls, *args, identification_attribute: str, **kwargs):
+        """
+        Checks if a object already with these identification.
+
+        :param args:
+        :param identification_attribute: the attribute, what is the one to check if it exists
+        :param kwargs:
+        """
         for obj in object_library[cls]:
             if getattr(obj, identification_attribute) == kwargs[identification_attribute]:
                 # set attributes
@@ -43,9 +50,37 @@ class BaseAddClass(ABC):
         return self
 
 
+class Event:
+    @abstractmethod
+    def __init__(self, _is_done: bool = False):
+        """
+        Created a Event obj witch will be added to the Eventmanager, that this will execute this event.
+
+        :param _is_done: default(False)
+        """
+        self._is_done = _is_done
+        thread_objects.events.append(self)
+
+    @property
+    @abstractmethod
+    def content(self):
+        """
+        Returned a dict with all content of the event
+
+        :return: dict
+        """
+        return {}
+
+    def done(self) -> bool:
+        return self._is_done
+
+
 class Interface(ABC, Thread):
     @abstractmethod
     def __init__(self):
+        """
+        This should be called the subclass, because the Tread should be init.
+        """
         super(Interface, self).__init__()
 
     @abstractmethod
@@ -53,7 +88,15 @@ class Interface(ABC, Thread):
         pass
 
     @abstractmethod
-    def decide(self, event) -> bool:
+    def decide(self, decide_txt: str, decide_options: dict) -> bool:
+        """
+        Is used for pop up some choices.
+
+        :param decide_txt: What text should be shown (what choice is it)
+        :param decide_options: All decides in one dictionary, they are like: str: method,
+        the method will only be executed, if it was chosen.
+        :return:
+        """
         pass
 
     @abstractmethod
@@ -90,4 +133,9 @@ class Interface(ABC, Thread):
 
     @abstractmethod
     def run(self):
+        """
+        Is used for the threading module, witch run the whole time
+
+        :return:
+        """
         pass

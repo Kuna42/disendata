@@ -111,7 +111,9 @@ class DB:
         :param member: a Member as a object
         :return:
         """
-        if not member.name_given.isalnum():
+        if member.name_generic == "":
+            pass
+        elif not member.name_generic.isalnum():
             raise ValueError("the member name must be alpha numeric")
 
         sql_instructions = "INSERT INTO m_member (name_self, name_given, name_generic, cryptic_hash) " \
