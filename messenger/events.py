@@ -127,3 +127,19 @@ class EventNewMember(Event):
         return {
             "ipv4": self.ipv4,
         }
+
+
+class EventNewChat(Event):
+    def __init__(self, chat: Chat):
+        super(EventNewChat, self).__init__()
+        self.chat = chat
+
+    @property
+    def content(self):
+        return {
+            "chat": self.chat
+        }
+
+
+class EvenLoadChat(Event):
+    pass

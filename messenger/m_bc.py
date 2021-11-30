@@ -9,7 +9,7 @@ class Member(BaseAddClass):
     def __new__(cls, *args, **kwargs):
         identify_attr = "id_"
         if "identification_attribute" in kwargs.keys():
-            if kwargs["identification_attribute"] in ("id_", "name_self", "address", "name_generic"):
+            if kwargs["identification_attribute"] in ("id_", "name_self", "address", "name_generic", "name_given"):
                 identify_attr = kwargs.pop("identification_attribute")
 
         if identify_attr not in kwargs.keys():
@@ -20,6 +20,9 @@ class Member(BaseAddClass):
                  id_: int = 0, name_self: str = "", name_given: str = "",
                  name_generic: str = "", cryptic_hash: str = "",
                  identification_attribute: str = "id_"):
+        if getattr(self, "_exists", False):
+            return
+        self._exists = True
         self.id_ = id_
         self.name_self = name_self
         self.name_given = name_given
@@ -140,9 +143,9 @@ class Message:
 
 class Messenger:
     def start(self):
-        self.run()
         thread_objects.network.db.open_chats()
         thread_objects.network.db.open_members()
+        self.run()
 
     def run(self):
         thread_objects.start()

@@ -7,7 +7,7 @@ import os
 
 from messenger.m_bc import Member, MemberGroup, Message, Chat
 from messenger.variables import S, running, connection
-from messenger.events import EventInterfaceDecide, EventMsgCmd
+from messenger.events import EventInterfaceDecide, EventMsgCmd, EventMsgShow
 from messenger.database import DB
 
 
@@ -64,7 +64,6 @@ class NetworkMessenger(Thread):
         self.sockets.sendto(connect_message, (ipv4, S.PORT))  # TODO hier
         if True:  # TODO here must be checked if it is accept
             member = Member(address=(ipv4, S.PORT), identification_attribute="address")
-            self.db.new_member(member)
             self.online_members.new_member(member)
 
     def send(self, message: Message):
@@ -110,9 +109,11 @@ class NetworkMessenger(Thread):
         elif message_txt[:2] == S.MSG_START["data"]:
             pass
         elif message_txt[:2] == S.MSG_START["msg"]:
-            message_txt = message_txt[2:]
-            return Message(text=self.msg_encrypt(message_txt), chat=Chat(name=""),
-                           sender=Member(address=address, identification_attribute="address"))
+            message_txt = message_txt[(message_txt.find(S.MSG_START["separator"])+1):]
+            message = Message(text=self.msg_encrypt(message_txt), chat=Chat(name=""),
+                              sender=Member(address=address, identification_attribute="address"))
+            EventMsgShow(message=message)
+            return message
 
         # self.check_message(Message(message_txt, Member(address)))
         message = Message

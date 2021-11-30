@@ -50,7 +50,8 @@ event_actions = {}
 def fill_event_actions():  # TODO could be better
     from messenger.events import (EventVersion, EventUpdateDB, EventSelfUpdate,
                                   EventInterfaceDecide, EventSend, EventNewMember,
-                                  EventMsgCmd, EventMsgShow, EventMsgSend, EventMsgLoad)
+                                  EventMsgCmd, EventMsgShow, EventMsgSend, EventMsgLoad,
+                                  EventNewChat)
 
     event_actions.clear()
     event_actions.update({
@@ -59,7 +60,7 @@ def fill_event_actions():  # TODO could be better
         EventMsgSend: thread_objects.network.send_message,
         EventMsgLoad: thread_objects.network.load_message,
         "chat_load": thread_objects.network.db.read_chat,
-        "chat_new": thread_objects.network.db.new_chat,
+        EventNewChat: thread_objects.network.db.new_chat,
         "member_new": None,
         "member_load": None,
         EventInterfaceDecide: thread_objects.interface.decide,  # decide_options: dict of str: method
@@ -92,7 +93,7 @@ def information() -> str:
     """
     return (__name + "-" + __version + " written by " + __author +
             " under the licence " + __licence + " " + __copyright +
-            ". Can be contacted on " + __www + ".")
+            ". Can be contacted on <" + __www + ">.")
 
 
 # class

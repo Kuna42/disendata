@@ -2,7 +2,8 @@
 
 # import
 from sqlite3 import connect as sql_connect
-from messenger.m_bc import Member, Chat, Message
+from messenger.m_bc import Member, Chat, Message, MemberGroup
+from messenger.variables import object_library
 
 import os
 
@@ -82,10 +83,10 @@ class DB:
             raise ValueError("the table name should be a String")
         if not chat.name.isalnum():
             raise ValueError("the table name must be alpha numeric")
-        sql_instructions = f"CREATE TABLE IF NOT EXISTS {chat.name} (" \
+        sql_instructions = f"CREATE TABLE IF NOT EXISTS chat_{chat.name} (" \
                            f"msg_id                    INTEGER PRIMARY KEY AUTOINCREMENT," \
                            f"member_sender             INTEGER," \
-                           f"member_receiver           INTEGER" \
+                           f"member_receiver           INTEGER," \
                            f"timestamp                 DATE," \
                            f"text                      TEXT" \
                            f");"
@@ -99,7 +100,7 @@ class DB:
             db_cursor.execute(sql_instructions, (chat.name, chat.display_name, chat.info))
 
             sql_instructions = "INSERT INTO m_chat_member VALUES(?, ?);"
-            for member in chat.member:  # TODO could be a MessageGroup from class Chat
+            for member in chat.member.all_members():
                 db_cursor.execute(sql_instructions, (chat.name, member.id_,))
 
             db.commit()
@@ -138,7 +139,7 @@ class DB:
         if not message.chat.name.isalnum():
             raise ValueError("the target table-name must be alpha numeric")
 
-        sql_instructions = f"INSERT INTO {message.chat.name} " \
+        sql_instructions = f"INSERT INTO chat_{message.chat.name} " \
                            f"(member_sender, member_receiver, timestamp, text) VALUES(?, ?, ?, ?);"##
 
         with sql_connect(self.__db_name) as db:
@@ -232,7 +233,7 @@ class DB:
         """
         if not chat.name.isalnum():
             raise ValueError("The name of the Chat should be Alpha Numeric")
-        sql_instructions = f"SELECT * FROM {chat.name} WHERE timestamp = ?;"
+        sql_instructions = f"SELECT * FROM chat_{chat.name} WHERE timestamp = ?;"
 
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
@@ -254,7 +255,7 @@ class DB:
         """
         if not chat.name.isalnum():
             raise ValueError("The name of the Chat should be Alpha Numeric")
-        sql_instructions = f"SELECT * FROM {chat.name} ORDER BY timestamp DESC LIMIT {count};"
+        sql_instructions = f"SELECT * FROM chat_{chat.name} ORDER BY timestamp DESC LIMIT {count};"
 
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
@@ -289,7 +290,8 @@ class DB:
             for m_chat_member in request_2:
                 if m_chat_member[0] == chat[0]:
                     member_list.append(Member(id_=m_chat_member[1]))
-            chat_list.append(Chat(name=chat[0], display_name=chat[1], info=chat[2], members=member_list))
+            chat_list.append(Chat(name=chat[0], display_name=chat[1], info=chat[2],
+                                  members=MemberGroup(*member_list)))
         return chat_list
 
     def open_members(self) -> [Member]:
@@ -313,10 +315,14 @@ class DB:
 
     def update(self):
         """
-        Cut the database to a smaller one if possible
+        append the members and
+        cut to the database to a smaller one if possible
 
         :return:
         """
+        for member in object_library[Member]:
+            self.new_member(member=member)
+
         sql_instructions = "VACUUM;"
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()

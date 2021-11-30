@@ -2,7 +2,7 @@
 # import
 from messenger.m_abc import Interface
 from messenger.m_bc import Member, Message, Chat
-from messenger.events import EventSend, EventMsgSend
+from messenger.events import EventSend, EventMsgSend, EventNewChat
 from messenger.variables import S, connection, running, thread_objects
 
 
@@ -43,7 +43,7 @@ class Terminal(Interface):
         return "/tmp/test.db"
 
     def show_msg(self, message: Message):
-        pass
+        self._show(f"/chats/{message.chat.name}>{message.sender.name_given}: {message.text.decode('utf-8')}")
 
     def show_chat(self, chat: Chat):
         pass
@@ -78,13 +78,21 @@ class Terminal(Interface):
             self._show("Connect to ... (ip)")
             answer = [self.input()]
             self._show(f"Port...(default: {S.PORT})")
-            answer.append(self.input())
-            EventSend(message=Message(to_member=Member(address=tuple(answer), identification_attribute="address"),
+            answer_2 = self.input()
+            if answer_2 == "":
+                answer.append(S.PORT)
+            else:
+                answer.append(int(self.input()))
+            self._show("(Given)Name of the Member")
+            answer_2 = self.input()
+            EventSend(message=Message(to_member=Member(address=tuple(answer),
+                                                       name_given=answer_2, identification_attribute="address"),
                                       sender=Member(id_=0), text=S.CMD["connection"], chat=Chat(name=""), m_type="cmd"))
 
         elif input_cmd == "online members":
             for member in thread_objects.network.online_members.group.values():
-                self._show(f"\t{member.name_self}\t+\t{member.name_generic}\t{member.address[0]}:{member.address[1]}")
+                self._show(f"\t{member.name_self}\t{member.name_given}\t{member.name_generic}"
+                           f"\t{member.id_}\t{member.address[0]}:{member.address[1]}")
 
         elif input_cmd == "new chat":
             pass
@@ -94,7 +102,21 @@ class Terminal(Interface):
 
         elif input_cmd == "open chat":
             chat = Chat(name=self.input("Chatname: "))
-            thread_objects.network.db.has_chat(chat=chat)
+            if not thread_objects.network.db.has_chat(chat=chat):
+                self._show(f"This chat({chat.name}) was not in the DB.")
+                chat.display_name = self.input("Name of the chat: ")
+                chat.info = self.input("Short information of the chat: ")
+                members_str = "-"
+                while members_str:
+                    members_str = self.input("Given-name of the Member, who is in this chat "
+                                             "(press only Enter if no one else should be added): ")
+                    if not members_str:
+                        break
+                    chat.member.new_member(Member(name_given=members_str,
+                                                  identification_attribute="name_given"))
+                EventNewChat(chat=chat)
+                # new chat
+
             self.chat_commands(chat=chat)
 
     def chat_commands(self, chat: Chat):
@@ -104,11 +126,13 @@ class Terminal(Interface):
             pass
         input_msg = ""
         while input_msg != (cmd_char + "exit"):
-            input_msg = self.input(text=f"/chats/{chat.name}> ")
+            input_msg = self.input(text=f"/chats/{chat.name}>self: ")
+            if input_msg == "":
+                continue
             if input_msg[0] == cmd_char:
                 chat_cmd(cmd=input_msg[1:], chat_=chat)
                 continue
-            EventMsgSend(message=Message(text=bytes(input_msg), sender=Member(id_=0), chat=chat))
+            EventMsgSend(message=Message(text=bytes(input_msg, "utf-8"), sender=Member(id_=0), chat=chat))
 
     def run(self):
         while running:
