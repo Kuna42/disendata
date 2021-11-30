@@ -82,6 +82,12 @@ class MemberGroup:
     def new_member(self, member: Member):
         self.group[getattr(member, self.sort_key)] = member
 
+    def all_members(self) -> [Member]:
+        member_list = []
+        for member in self.group.values():
+            member_list.append(member)
+        return member_list
+
 
 class Chat(BaseAddClass):
     def __new__(cls, *args, **kwargs):
@@ -94,9 +100,11 @@ class Chat(BaseAddClass):
             kwargs[identify_attr] = len(object_library[cls]) + 100  # TODO could be better
         return super().__new__(cls, *args, identification_attribute=identify_attr, **kwargs)
 
-    def __init__(self, *, name, members: [Member] = [],
+    def __init__(self, *, name, members: MemberGroup = None,
                  display_name: str = "", info: str = "",
                  identification_attribute: str = "name"):
+        if members is None:
+            members = MemberGroup()
         self.name = name
         self.member = members  # [Member]
         self.display_name = display_name
@@ -133,6 +141,8 @@ class Message:
 class Messenger:
     def start(self):
         self.run()
+        thread_objects.network.db.open_chats()
+        thread_objects.network.db.open_members()
 
     def run(self):
         thread_objects.start()

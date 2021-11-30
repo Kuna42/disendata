@@ -72,7 +72,7 @@ class NetworkMessenger(Thread):
             self.new_member(message.receiver.actual_ip)
         if message.m_type == "cmd":
             self.sockets.sendto(
-                message.text,
+                S.MSG_START["cmd"] + message.text,
                 message.receiver.address
             )
             return
@@ -131,8 +131,7 @@ class NetworkMessenger(Thread):
         if command == S.CMD["connection"]:
 
             def yes():
-                text = S.MSG_START["cmd"] + S.CMD["connection accept"]
-                EventMsgCmd(message=Message(text=text, chat=message.chat, m_type="cmd",
+                EventMsgCmd(message=Message(text=S.CMD["connection accept"], chat=message.chat, m_type="cmd",
                                             sender=message.receiver, to_member=message.sender))
 
             def no():
@@ -165,7 +164,9 @@ class NetworkMessenger(Thread):
 
     def send_message(self, message: Message):
         self.save_message(message)
-        self.send(message)
+        for member in message.chat.member.all_members():
+            message.receiver = member
+            self.send(message)
 
     def run(self) -> None:
         while running:

@@ -2,7 +2,7 @@
 # import
 from messenger.m_abc import Interface
 from messenger.m_bc import Member, Message, Chat
-from messenger.events import EventSend
+from messenger.events import EventSend, EventMsgSend
 from messenger.variables import S, connection, running, thread_objects
 
 
@@ -66,23 +66,49 @@ class Terminal(Interface):
             self._show("\thelp\n"
                        "\texit\n"
                        "\tconnect\n"
-                       "\tonline members\n")
+                       "\tonline members\n"
+                       "\tnew chat\n"
+                       "\tlist chats\n"
+                       "\topen chat\n")
 
         elif input_cmd == "exit":
             self.running.stop()
 
         elif input_cmd == "connect": # TODO could be better, like at the first check if someone else is there
-            text = S.MSG_START["cmd"] + S.CMD["connection"]
-
             self._show("Connect to ... (ip)")
             answer = [self.input()]
             self._show(f"Port...(default: {S.PORT})")
             answer.append(self.input())
             EventSend(message=Message(to_member=Member(address=tuple(answer), identification_attribute="address"),
-                                      sender=Member(id_=0), text=text, chat=Chat(name=""), m_type="cmd"))
+                                      sender=Member(id_=0), text=S.CMD["connection"], chat=Chat(name=""), m_type="cmd"))
+
         elif input_cmd == "online members":
             for member in thread_objects.network.online_members.group.values():
                 self._show(f"\t{member.name_self}\t+\t{member.name_generic}\t{member.address[0]}:{member.address[1]}")
+
+        elif input_cmd == "new chat":
+            pass
+
+        elif input_cmd == "list chats":
+            pass
+
+        elif input_cmd == "open chat":
+            chat = Chat(name=self.input("Chatname: "))
+            thread_objects.network.db.has_chat(chat=chat)
+            self.chat_commands(chat=chat)
+
+    def chat_commands(self, chat: Chat):
+        cmd_char = "/"
+
+        def chat_cmd(cmd: str, chat_: Chat):
+            pass
+        input_msg = ""
+        while input_msg != (cmd_char + "exit"):
+            input_msg = self.input(text=f"/chats/{chat.name}> ")
+            if input_msg[0] == cmd_char:
+                chat_cmd(cmd=input_msg[1:], chat_=chat)
+                continue
+            EventMsgSend(message=Message(text=bytes(input_msg), sender=Member(id_=0), chat=chat))
 
     def run(self):
         while running:

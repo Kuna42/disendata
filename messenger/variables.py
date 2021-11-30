@@ -1,7 +1,7 @@
 
 # import
 
-#from messenger.m_bc import ThreadObjectLibrary
+# from messenger.m_bc import ThreadObjectLibrary
 class ThreadObjectLibrary:
     def __init__(self):
         self.network = None
@@ -28,7 +28,9 @@ class Running:
 
     def stop(self):
         self.running = False
+        raise KeyboardInterrupt("Finished, but this Code need to rewritten")
         # TODO add stopping all threads
+
 
 # global variable
 global object_library
@@ -56,8 +58,8 @@ def fill_event_actions():  # TODO could be better
         EventMsgShow: thread_objects.interface.show_msg,
         EventMsgSend: thread_objects.network.send_message,
         EventMsgLoad: thread_objects.network.load_message,
-        "chat_load": None,
-        "chat_new": None,
+        "chat_load": thread_objects.network.db.read_chat,
+        "chat_new": thread_objects.network.db.new_chat,
         "member_new": None,
         "member_load": None,
         EventInterfaceDecide: thread_objects.interface.decide,  # decide_options: dict of str: method
