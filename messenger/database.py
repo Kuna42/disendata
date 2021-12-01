@@ -100,7 +100,7 @@ class DB:
             db_cursor.execute(sql_instructions, (chat.name, chat.display_name, chat.info))
 
             sql_instructions = "INSERT INTO m_chat_member VALUES(?, ?);"
-            for member in chat.member.all_members():
+            for member in chat.members.all_members():
                 db_cursor.execute(sql_instructions, (chat.name, member.id_,))
 
             db.commit()
@@ -221,7 +221,7 @@ class DB:
 
         chat_list = []
         for chat in request:
-            chat_list.append(Chat(name=chat[0], members=[member]))
+            chat_list.append(Chat(name=chat[0], members=MemberGroup(member)))
         return chat_list
 
     def read_message(self, chat: Chat, _timestamp) -> Message or None:

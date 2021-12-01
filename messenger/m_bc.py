@@ -40,7 +40,10 @@ class Member(BaseAddClass):
     def address(self, value: tuple):
         if len(value) != 2:
             raise AttributeError("Wrong address, correct: (IPv4, Port)")
-        self.actual_ip = value[0]
+        if value[0] == "":
+            self.actual_ip = "127.0.0.1"
+        else:
+            self.actual_ip = value[0]
         if value[1] == 0:
             self.port = S.PORT
         else:
@@ -109,7 +112,7 @@ class Chat(BaseAddClass):
         if members is None:
             members = MemberGroup()
         self.name = name
-        self.member = members  # [Member]
+        self.members = members  # [Member]
         self.display_name = display_name
         self.info = info
 

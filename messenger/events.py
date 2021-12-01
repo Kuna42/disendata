@@ -117,16 +117,8 @@ class EventMsgLoad(Event):
         }
 
 
-class EventNewMember(Event):
-    def __init__(self, ipv4: str):
-        super(EventNewMember, self).__init__()
-        self.ipv4 = ipv4
-
-    @property
-    def content(self):
-        return {
-            "ipv4": self.ipv4,
-        }
+class EventNewMember(_EventMember):
+    pass
 
 
 class EventNewChat(Event):

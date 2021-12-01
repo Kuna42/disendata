@@ -58,17 +58,16 @@ class NetworkMessenger(Thread):
         self.ip = value[0]
         self.open_port = value[1]
 
-    def new_member(self, ipv4):
+    def new_member(self, member: Member):
         # self.sockets.connect((ipv4, S_PORT))
         connect_message = S.MSG_START["cmd"] + S.CMD["connection"]
-        self.sockets.sendto(connect_message, (ipv4, S.PORT))  # TODO hier
+        self.sockets.sendto(connect_message, member.address)  # TODO hier
         if True:  # TODO here must be checked if it is accept
-            member = Member(address=(ipv4, S.PORT), identification_attribute="address")
             self.online_members.new_member(member)
 
     def send(self, message: Message):
         if not self.online_members.has_member(message.receiver):
-            self.new_member(message.receiver.actual_ip)
+            self.new_member(message.receiver)
         if message.m_type == "cmd":
             self.sockets.sendto(
                 S.MSG_START["cmd"] + message.text,
@@ -77,15 +76,16 @@ class NetworkMessenger(Thread):
             return
         message_parts = len(message.text) // S.MSG_SIZE + 1
         for i in range(0, message_parts):
-            part_of_parts = f"{i + 1}/{message_parts}"
-            msg_size = S.MSG_SIZE - len(part_of_parts)
+            message_text = (S.MSG_START[message.m_type] + bytes(f"{i + 1}/{message_parts}", "ascii")
+                            + S.MSG_START["separator"] + bytes(message.chat.name, "ascii")
+                            + S.MSG_START["separator"])
+            msg_size = S.MSG_SIZE - len(message_text)
             self.sockets.sendto(
-                S.MSG_START[message.m_type] + bytes(part_of_parts, "ascii")
-                + S.MSG_START["separator"] + message.text[i * msg_size:(i + 1) * msg_size],
+                message_text + message.text[i * msg_size:(i + 1) * msg_size],
                 message.receiver.address
             )
 
-    def reversiere(self) -> Message:
+    def receive(self) -> Message:
         message_txt, address = self.sockets.recvfrom(self.message_size)
         print(message_txt)
         if message_txt[:2] not in S.MSG_START.values():
@@ -101,7 +101,8 @@ class NetworkMessenger(Thread):
         if message_txt[:2] == S.MSG_START["cmd"]:
 
             cmd = message_txt[message_txt.find(S.MSG_START["separator"]):]
-            self.msg_command(Message(text=message_txt[2:], sender=Member(address=address, identification_attribute="address"),
+            self.msg_command(Message(text=message_txt[2:],
+                                     sender=Member(address=address, identification_attribute="address"),##
                                      chat=Chat(name="")))
             return
         elif message_txt[:2] == S.MSG_START["tmp"]:
@@ -109,9 +110,9 @@ class NetworkMessenger(Thread):
         elif message_txt[:2] == S.MSG_START["data"]:
             pass
         elif message_txt[:2] == S.MSG_START["msg"]:
-            message_txt = message_txt[(message_txt.find(S.MSG_START["separator"])+1):]
-            message = Message(text=self.msg_encrypt(message_txt), chat=Chat(name=""),
-                              sender=Member(address=address, identification_attribute="address"))
+            message_txt = message_txt.split(S.MSG_START["separator"])
+            message = Message(text=self.msg_encrypt(message_txt[2]), chat=Chat(name=message_txt[1]),
+                              sender=Member(address=address, identification_attribute="address"))##
             EventMsgShow(message=message)
             return message
 
@@ -165,10 +166,10 @@ class NetworkMessenger(Thread):
 
     def send_message(self, message: Message):
         self.save_message(message)
-        for member in message.chat.member.all_members():
+        for member in message.chat.members.all_members():
             message.receiver = member
             self.send(message)
 
     def run(self) -> None:
         while running:
-            msg = self.reversiere()
+            msg = self.receive()

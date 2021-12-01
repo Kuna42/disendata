@@ -68,7 +68,7 @@ def fill_event_actions():  # TODO could be better
         EventSelfUpdate: None,
         EventVersion: information,
         EventNewMember: thread_objects.network.new_member,
-        EventUpdateDB: None,
+        EventUpdateDB: thread_objects.network.db.update,
         EventSend: thread_objects.network.send,
     })
 
