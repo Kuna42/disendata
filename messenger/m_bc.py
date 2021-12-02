@@ -53,7 +53,6 @@ class Member(BaseAddClass):
 class MemberGroup:
     def __init__(self, *members: Member, sort_key: str = "actual_ip"):
         self.name = ""  # name of the session
-        self.self_ip = ""
         self.group = {}
         if sort_key not in ("actual_ip", "address", "id_", "name_generic"):
             sort_key = "actual_ip"
@@ -67,17 +66,16 @@ class MemberGroup:
 
         the self will be overwritten with the attributes of other, if the attributes of other are "True"
 
-        :param other: an other member_group with the same class
+        :param other: another member_group with the same class
 
         :return: this object, self
         """
         if type(self) is not type(other):
             raise NotImplementedError("This addition was not implemented")
-        new_group = MemberGroup()
-        new_group.name = other.name
-        new_group = self.group#
-        new_group.update(other.group)#
-        self.group = new_group
+        if self.sort_key != other.sort_key:
+            raise ValueError("These two Member groups should have the same sort key.")
+        self.name = other.name
+        self.group.update(other.group)
         return self
 
     def has_member(self, name: Member or str) -> bool:
@@ -103,7 +101,7 @@ class Chat(BaseAddClass):
                 identify_attr = kwargs["identification_attribute"]
 
         if identify_attr not in kwargs.keys():
-            kwargs[identify_attr] = len(object_library[cls]) + 100  # TODO could be better
+            kwargs[identify_attr] = "generic"  # TODO could be better
         return super().__new__(cls, *args, identification_attribute=identify_attr, **kwargs)
 
     def __init__(self, *, name, members: MemberGroup = None,

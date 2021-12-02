@@ -14,7 +14,7 @@ class BaseAddClass(ABC):
     @abstractmethod
     def __new__(cls, *args, identification_attribute: str, **kwargs):
         """
-        Checks if a object already with these identification.
+        Checks if an object already with this identification.
 
         :param args:
         :param identification_attribute: the attribute, what is the one to check if it exists
@@ -36,7 +36,7 @@ class BaseAddClass(ABC):
 
         the self will be overwritten with the attributes of other, if the attributes of other are "True"
 
-        :param other: an other object with the same class
+        :param other: another object with the same class
 
         :return: this object, self
         """
@@ -54,7 +54,7 @@ class Event:
     @abstractmethod
     def __init__(self, _is_done: bool = False):
         """
-        Created a Event obj witch will be added to the Eventmanager, that this will execute this event.
+        Created an Event obj witch will be added to the Eventmanager, that this will execute this event.
 
         :param _is_done: default(False)
         """

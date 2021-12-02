@@ -5,7 +5,7 @@ from threading import Thread
 
 from messenger.m_abc import Event
 from messenger.m_bc import Message, Chat, Member
-from messenger.variables import running, event_actions, thread_objects
+from messenger.variables import running, event_actions
 
 
 # classes

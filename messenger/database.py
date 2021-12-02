@@ -109,7 +109,7 @@ class DB:
         """
         Add a new member to the db
 
-        :param member: a Member as a object
+        :param member: a Member as an object
         :return:
         """
         if member.name_generic == "":
@@ -221,7 +221,7 @@ class DB:
 
         chat_list = []
         for chat in request:
-            chat_list.append(Chat(name=chat[0], members=MemberGroup(member)))
+            chat_list.append(Chat(name=chat[0]))
         return chat_list
 
     def read_message(self, chat: Chat, _timestamp) -> Message or None:

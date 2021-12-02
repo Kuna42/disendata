@@ -59,7 +59,6 @@ class NetworkMessenger(Thread):
         self.open_port = value[1]
 
     def new_member(self, member: Member):
-        # self.sockets.connect((ipv4, S_PORT))
         connect_message = S.MSG_START["cmd"] + S.CMD["connection"]
         self.sockets.sendto(connect_message, member.address)  # TODO hier
         if True:  # TODO here must be checked if it is accept

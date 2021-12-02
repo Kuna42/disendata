@@ -17,7 +17,6 @@ class Terminal(Interface):
         if text:
             return input(text)
         return input(self.typing_start)
-        # return self._ainput()
 
     @staticmethod
     def _show(string: str, end: str = "\n"):
