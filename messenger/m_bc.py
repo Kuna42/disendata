@@ -1,5 +1,7 @@
 
 # import
+import os
+
 from messenger.m_abc import BaseAddClass
 from messenger.variables import S, object_library, thread_objects
 
@@ -113,6 +115,8 @@ class Chat(BaseAddClass):
         self.members = members  # [Member]
         self.display_name = display_name
         self.info = info
+        self.unread_msg = 0  # TODO this must be in the database too
+        self.messages = []  # TODO here should be implemented something to fetch the last messages
 
 
 class Message:
@@ -140,6 +144,34 @@ class Message:
     @property
     def timestamp(self):
         return self.__timestamp
+
+
+class Filecheck:
+    @staticmethod
+    def file(filepath: str) -> bool:
+        os_name = os.uname().sysname
+        if os_name == "Linux":
+            return Filecheck.linux(filepath)
+        elif os_name == "Windows":
+            return Filecheck.windows(filepath)
+        raise OSError("Not known OS. Please check if you run a Linux Distro or Windows.")
+
+    @staticmethod
+    def linux(filepath: str) -> bool:
+        if filepath.startswith("/") is (filepath[0] == "~"):
+            raise SyntaxError("filename should be a complete path like /tmp/test.db")
+        if filepath[0] == "~":
+            filepath = os.path.expanduser("~") + filepath[1:]
+        if filepath.split("/")[1] not in {"tmp", "home", "etc", ".disendata"}:
+            # if the db was in a global directory or in a local directory like ".disendata"
+            raise PermissionError(f"You can't open this database")
+        if not os.path.exists("/".join(filepath.split("/")[:-1])):
+            raise FileNotFoundError("This file/path does not exists. File can't be created.")
+        return True
+
+    @staticmethod
+    def windows(filepath: str) -> bool:
+        return True
 
 
 class Messenger:

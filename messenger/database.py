@@ -17,7 +17,7 @@ class DB:
         :param db_name: The name of the database what will be used
         """
         self.__db_name = db_name
-        if not os.path.exists(self.__db_name):  # TODO test if path is valid
+        if not os.path.exists(self.__db_name):  # TODO test if path is valid (should be in an upper class [actual is it in networkmessenger])
             self.create()
 
     def __execute(self, sql_instruction: str, param: tuple = None): # needed?

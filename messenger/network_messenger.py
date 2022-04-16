@@ -5,7 +5,7 @@ from threading import Thread
 import socket
 import os
 
-from messenger.m_bc import Member, MemberGroup, Message, Chat
+from messenger.m_bc import Member, MemberGroup, Message, Chat, Filecheck
 from messenger.variables import S, running, connection
 from messenger.events import EventInterfaceDecide, EventMsgCmd, EventMsgShow
 from messenger.database import DB
@@ -27,14 +27,8 @@ class NetworkMessenger(Thread):
             # here should be Messages, where was not complete or was a request
         }
 
-        if not (db_name.startswith("/") or db_name.startswith("~")):
-            raise SyntaxError("db_name should be a complete path like /tmp/test.db")
-        if db_name.split("/")[1] not in ["tmp", "home", "etc", ".disendata"]:
-            # if the db was in a global directory or in a local like ".disendata"
-            raise PermissionError(f"You can't open this database {db_name}")
-        if not os.path.exists(db_name):
-            if not os.path.exists("/".join(db_name.split("/")[:-1])):##
-                raise FileNotFoundError("This File does not exists.")
+        if not Filecheck.file(db_name):
+            raise FileNotFoundError("An unknown Error occurred in \'disendata/messenger/network_messenger\'.")
 
         self.db = DB(db_name=db_name)
         self.db.open_members()

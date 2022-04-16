@@ -2,6 +2,9 @@
 # import
 
 # from messenger.m_bc import ThreadObjectLibrary
+import os.path
+
+
 class ThreadObjectLibrary:
     def __init__(self):
         self.network = None
@@ -23,11 +26,15 @@ class Running:
     def __init__(self, __running: bool = True):
         self.running = __running
 
+    def __del__(self):
+        print(information()) # this is possible not necessary
+
     def __bool__(self):
         return self.running
 
     def stop(self):
         self.running = False
+        print(information())
         raise KeyboardInterrupt("Finished, but this Code need to rewritten")
         # TODO add stopping all threads
 
@@ -78,22 +85,38 @@ connection = [("", 36000)]
 
 # private variables
 __name = "disendata_messenger"
-__version = "0.0.1"
+__version = "0.0.2"
 __author = "Kuna42"
 __www = "kuna42@web.de"
 __copyright = "(C) 2021"
 __licence = "MIT"
 
 
-def information() -> str:
+def information(_type=str) -> str or tuple or dict:
     """
-    Returns all static information in a string
+    Returns all static information
+    :param _type  decide if it returned
+    as a string or as a tuple or as a dict
 
-    :return: str
+    :return: string or tuple or dictionary
     """
-    return (__name + "-" + __version + " written by " + __author +
-            " under the licence " + __licence + " " + __copyright +
-            ". Can be contacted on <" + __www + ">.")
+    if _type is str:
+        return (__name + "-" + __version +
+                " written by " + __author +
+                " under the licence " + __licence +
+                " " + __copyright +
+                ". Can be contacted on <" + __www + ">.")
+    elif _type is tuple:
+        return __name, __version, __author, __www, __copyright, __licence
+    elif _type is dict:
+        return {
+            "name": __name,
+            "version": __version,
+            "author": __author,
+            "www": __www,
+            "copyright": __copyright,
+            "licence": __licence
+        }
 
 
 # class
@@ -117,6 +140,17 @@ class S:
         "information": b"i",
         "close": b"\n",
     }
+
+
+class LinuxS:
+    """
+    Class for standard variables what are only in Linux
+    """
+    CONFIG_FILE_PATH = os.path.expanduser("~") + "/.config/disendata/"
+    CONFIG_FILE_NAME = CONFIG_FILE_PATH + "terminal.config"
+    DISENDATA_PATH = "../"  # TODO this must be correct
+    TEMPLATE_CONFIG_FILE_PATH = DISENDATA_PATH + "messenger/interface/Linux/template/terminal.config"
+    DATA_PATH = os.path.expanduser("~") + "/.disendata/"
 
 
 if __name__ == "__main__":
