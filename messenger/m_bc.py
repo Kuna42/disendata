@@ -8,6 +8,15 @@ from messenger.variables import S, object_library, thread_objects
 
 # classes
 class Member(BaseAddClass):
+    _identify_attr = (
+        "_id",
+        "name_self",
+        "address",
+        "name_generic",
+        "name_given"
+    )
+
+    """
     def __new__(cls, *args, **kwargs):
         identify_attr = "id_"
         if "identification_attribute" in kwargs.keys():
@@ -17,14 +26,15 @@ class Member(BaseAddClass):
         if identify_attr not in kwargs.keys():
             kwargs[identify_attr] = len(object_library[cls]) + 100  # TODO could be better
         return super().__new__(cls, *args, identification_attribute=identify_attr, **kwargs)
+    """  # TODO check if this is possible
 
     def __init__(self, *, address: tuple = ("", 0),
                  id_: int = 0, name_self: str = "", name_given: str = "",
                  name_generic: str = "", cryptic_hash: str = "",
                  identification_attribute: str = "id_"):
-        if getattr(self, "_exists", False):
+        if getattr(self, "_BaseAddClass__initialised", False):
             return
-        self._exists = True
+        super().__init__(self)
         self.id_ = id_
         self.name_self = name_self
         self.name_given = name_given
@@ -96,26 +106,26 @@ class MemberGroup:
 
 
 class Chat(BaseAddClass):
-    def __new__(cls, *args, **kwargs):
-        identify_attr = "name"
-        if "identification_attribute" in kwargs.keys():
-            if kwargs["identification_attribute"] in ("name", "display_name"):
-                identify_attr = kwargs["identification_attribute"]
-
-        if identify_attr not in kwargs.keys():
-            kwargs[identify_attr] = "generic"  # TODO could be better
-        return super().__new__(cls, *args, identification_attribute=identify_attr, **kwargs)
+    _identify_attr = (
+        # ("name", str),  # todo this might be accepted
+        "name",
+        "display_name"
+    )
 
     def __init__(self, *, name, members: MemberGroup = None,
                  display_name: str = "", info: str = "",
                  identification_attribute: str = "name"):
-        if members is None:
-            members = MemberGroup()
+        if getattr(self, "_BaseAddClass__initialised", False):
+            return
+        super().__init__(self)
+        members = MemberGroup()
         self.name = name
         self.members = members  # [Member]
+        #if not hasattr(self, "display_name") and display_name != "":
         self.display_name = display_name
         self.info = info
         self.unread_msg = 0  # TODO this must be in the database too
+        self.type_buffer = ""  # TODO this must be implemented
         self.messages = []  # TODO here should be implemented something to fetch the last messages
 
 

@@ -5,4 +5,9 @@ by [Kuna42](https://github.com/Kuna42)
 under the licence [MIT](https://opensource.org/licenses/MIT)
 
 ## Messenger
-This Messenger is coded for local Networks.
+This Messenger is coded for local Networks without a server.
+
+
+---
+### Note:
+this branch is not usable for testing the program

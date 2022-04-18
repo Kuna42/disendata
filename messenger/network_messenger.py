@@ -80,13 +80,13 @@ class NetworkMessenger(Thread):
 
     def receive(self) -> Message:
         message_txt, address = self.sockets.recvfrom(self.message_size)
-        print(message_txt)
+        #print(message_txt)
         if message_txt[:2] not in S.MSG_START.values():
-            print("+++")
-            print(message_txt)
-            print(message_txt[:2])##
-            print(S.MSG_START.values())
-            print(message_txt[:2] in S.MSG_START.values())
+            #print("+++")
+            #print(message_txt)
+            #print(message_txt[:2])##
+            #print(S.MSG_START.values())
+            #print(message_txt[:2] in S.MSG_START.values())
             return
             #return self.reversiere()  # vllt nicht gut
         # TODO das zusammenbauen von Nachrichten

@@ -233,6 +233,10 @@ class CursesWindow:
                     0,  # begin_y
                     0,  # begin_x
                 )
+                self.type_act_loc = [
+                    0,  # y active location in the window
+                    0,  # x active location in the window
+                ]
                 self.type_buffer = ""
 
         self.window = Window()
@@ -240,6 +244,8 @@ class CursesWindow:
 
         self.update_screen()
         # todo here must be written on
+
+        self.chat_selected = None
 
         self.language = LanguageText(self.config.language)
 
@@ -280,9 +286,9 @@ class CursesWindow:
             self.window.debug_d[1],
             self.window.debug_d[0] + 2,
             1,
-            self.screen_size[0] - 1,
+            self.screen_size[0] - 2,
             self.window.debug_d[1] + 1,
-            1000,  # TODO here is recode needed (y size of the chats)  # this must be a number with the divider 2
+            1000,  # TODO here is recode needed (y = size of the chats * 2 - 1)
             self.window.debug_d[1]
         )
         self.window.type_d = [
@@ -320,7 +326,7 @@ class CursesWindow:
             return -1  # could be None
         elif _input == self._ord(self.config.k_switch_window):
             tab_rotating = {"type": "chat", "chat": "history", "history": "type"}
-            self.focus = tab_rotating.get(self.focus, self.focus)
+            self.focus = tab_rotating.get(self.focus, self.focus)  # TODO this should be separate
         elif _input == self._ord(self.config.k_help):
             self.update_info_field(visible=True, text=TextCurses(self.language.translate("help_text")))
         elif _input == self._ord(self.config.k_config):
@@ -339,6 +345,16 @@ class CursesWindow:
             return _input
         # it returns -1 if nothing is pressed
         return -1
+
+    def _is_printable_char(self, ch: int or str):  # TODO this need to be better
+        if type(ch) is int:
+            pass
+        elif type(ch) is str:
+            if len(ch) - 1:
+                raise ValueError(f"This Value '{ch}' must be exactly one single character, not more or less.")
+            ch = ord(ch)
+
+        return 31 < ch < 127  # or 160 < ch < 255
 
     def _ord(self, string: str) -> int:
         """
@@ -375,46 +391,99 @@ class CursesWindow:
         self.screen.addstr('└' + '─'*self.window.chat_d[1] + '┴')
         self.screen.refresh()
 
-    def update_debug(self, _input: int = None, text: TextCurses = None):
-        pass
+    def update_debug(self, text: TextCurses = None):
+        if text:
+            self.window.debug.addstr(text.y, 0, text.text
+                                     .ljust(self.window.debug_d[1] - text.x, " ")
+                                     .rjust(self.window.debug_d[1], " "))
+        self.window.debug.refresh()
 
-    def update_chat(self, _input: int = None, chat: Chat = None):  # todo idk if the chat is necessary
+    def update_chat(self, _input: int = None, chat: Chat = None):
+        if chat:
+            tmp_how_many_chats = len(self.window.chat_chat_ord)
+            if tmp_how_many_chats:
+                self.window.chat.addstr(tmp_how_many_chats * 2 - 1, 0, "-" * self.window.chat_d[7])
+            self.window.chat.addstr(tmp_how_many_chats * 2, 0,
+                                    chat.display_name[:self.window.chat_d[7] - 3]
+                                    .ljust(self.window.chat_d[7] - 3, " ")
+                                    + "|" + str(chat.unread_msg)[:3].rjust(2, " "))
+            self.window.chat_chat_ord.append(chat)
+            return self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])  # todo this needs to be better
+
+        self.chat_selected = self.window.chat_chat_ord[self.window.chat_act_loc[0] // 2]
+        self.window.chat.addstr(*self.window.chat_act_loc,
+                                self.chat_selected.display_name[:self.window.chat_d[7] - 3]
+                                .ljust(self.window.chat_d[7] - 3, " ")
+                                + "|" + str(self.chat_selected.unread_msg)[:3].rjust(2, " "),
+                                curses.color_pair(1))
+
         # todo python3.10 match case
         if _input is None or _input == -1:
             pass
         elif _input == curses.KEY_UP:
-            if self.window.chat_act_loc[0] == 0:
-                return
-            self.window.chat_act_loc[0] -= 2
+            if self.window.chat_act_loc[0] != 0:
+                # return self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])
+                self.window.chat_act_loc[0] -= 2
         elif _input == curses.KEY_DOWN:
-            if self.window.chat_act_loc[0] == self.window.chat_d[6] - 1:
-                return
-            self.window.chat_act_loc[0] += 2
+            if self.window.chat_act_loc[0] != len(self.window.chat_chat_ord) * 2 - 2:
+                # return self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])
+                self.window.chat_act_loc[0] += 2
         elif _input == curses.KEY_LEFT:
             pass
         elif _input == curses.KEY_RIGHT:
             pass
         elif _input == curses.KEY_ENTER:
-            self.update_history(chat=self.window.chat_chat_ord[self.window.chat_act_loc[0]])
+            self.update_history(chat=self.chat_selected)
 
-        if chat:
-            self.window.chat_chat_ord.append(chat)
+        self.chat_selected = self.window.chat_chat_ord[self.window.chat_act_loc[0] // 2]
 
-        """
-            self.update_history(text=TextCurses("")) # TODO work here for enter the chat history
-            # TODO work here
-        if text:
-            if text.y is None:
-                self.window.chat.addstr(*self.window.chat_act_loc, str(text))
-            else:
-                self.window.chat.addstr(text.y, text.x, str(text))
-        """
+        self.window.chat.addstr(*self.window.chat_act_loc,
+                                self.chat_selected.display_name[:self.window.chat_d[7] - 3]
+                                .ljust(self.window.chat_d[7] - 3, " ")
+                                + "|" + str(self.chat_selected.unread_msg)[:3].rjust(2, " "),
+                                curses.color_pair(2))
 
-    def update_history(self, _input: int = None, text: TextCurses = None):
+        self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])  # todo this needs to be better, replace the (0, ...
+
+    def update_history(self, _input: int = None, chat: Chat = None):
+        # todo update_history() might be changed that only a few messages would shown
         pass
 
     def update_type(self, _input: int = None, text: TextCurses = None):
-        pass
+        # todo python3.10 match case
+        if _input is None or _input == -1:
+            pass
+        elif _input == curses.KEY_UP:
+            pass
+        elif _input == curses.KEY_DOWN:
+            pass
+        elif _input == curses.KEY_LEFT:
+            pass
+        elif _input == curses.KEY_RIGHT:
+            pass
+        elif _input == curses.KEY_ENTER:
+            pass
+        elif _input == curses.KEY_BACKSPACE:
+            self.window.type.addstr(*self.window.type_act_loc, " ")
+            self.window.type_buffer = self.window.type_buffer[:-1]
+        elif self._is_printable_char(_input):
+            self.window.type_buffer += chr(_input)
+        buffer_size = len(self.window.type_buffer)
+
+        self.window.type_act_loc = [
+            buffer_size // self.window.type_d[1],
+            buffer_size % self.window.type_d[1]
+        ]
+
+        def get_type_line_text():  # todo maybe this could be better without yield
+            for buffer_index in range(0, buffer_size, self.window.type_d[1]):
+                # todo here might be an auto corrector
+                yield self.window.type_buffer[buffer_index:buffer_size+buffer_index]
+        for line_index, line_text in enumerate(get_type_line_text()):
+            self.window.type.addstr(line_index, 0, line_text)
+        # cursor
+        self.window.type.addstr(*self.window.type_act_loc, "_", curses.A_BLINK)
+        self.window.type.refresh()
 
     def update_write_field(self, visible: bool = True, _input: int = None,
                            text: TextCurses = None, get_buffer: bool = False):
@@ -445,10 +514,16 @@ class CursesWindow:
         }
         while running:
             char_input = self.input()
-            if char_input == -1:
-                continue
+            # if char_input == -1:
+            #     continue
             if self.focus in focus_def.keys():
                 focus_def[self.focus](_input=char_input)
+
+            self.update_debug(text=TextCurses(f"Focus: {self.focus}", 1, 0))
+            self.update_debug(text=TextCurses(f"Chat:  {self.chat_selected.display_name}", 2, 0))
+
+            # TODO tmp
+            self.update_debug(text=TextCurses(f"TMP:   {self.window.chat_act_loc[0]}", 0, 0))
 
 
 class Terminal(Interface):
@@ -497,4 +572,7 @@ class Terminal(Interface):
         pass
 
     def run(self):
+        self.curses.update_chat(chat=Chat(name="self", display_name="command line 1"))  # todo
+        self.curses.update_chat(chat=Chat(name="self_2", display_name="command line 2 - super long name without text"))  # todo
+        self.curses.chat_selected = Chat(name="self")
         self.curses.run()

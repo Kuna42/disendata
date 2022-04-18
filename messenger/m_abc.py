@@ -11,16 +11,22 @@ from threading import Thread
 
 # classes
 class BaseAddClass(ABC):
-    @abstractmethod
-    def __new__(cls, *args, identification_attribute: str, **kwargs):
+    _identify_attr = (
+        # a tuple of all identification attributes
+        # the first one is the default one
+    )
+
+    def __new__(cls, *args, identification_attribute: str = None, **kwargs):
         """
         Checks if an object already with this identification.
 
         :param args:
-        :param identification_attribute: the attribute, what is the one to check if it exists
+        :param identification_attribute: the attribute, what is the one to check if it exists None = default
         :param kwargs:
         """
         for obj in object_library[cls]:
+            if identification_attribute not in cls._identify_attr:
+                identification_attribute = cls._identify_attr[0]
             if getattr(obj, identification_attribute) == kwargs[identification_attribute]:
                 # set attributes
                 for attribute in kwargs:
@@ -28,6 +34,7 @@ class BaseAddClass(ABC):
                 return obj
         obj = super().__new__(cls)
         object_library[cls].append(obj)
+        obj.__initialised = False
         return obj
 
     def __add__(self, other):  # TODO probably remove able
@@ -48,6 +55,27 @@ class BaseAddClass(ABC):
             if attr_value:
                 setattr(self, attr_name, attr_value)
         return self
+
+    def __init__(self, *args, **kwargs):
+        """
+        The _BaseAddClass_initialised attribute should be asked,
+        when in the subclass __init__ is called, like so:
+        (write this at the top of your __init__)
+
+
+        if getattr(self, "_BaseAddClass__initialised", False):
+            return
+        super().__init__(self)
+        """
+        self.__initialised = True
+
+        """
+        write this at the top of your __init__  method:
+        
+        if getattr(self, "_BaseAddClass__initialised", False):
+            return
+        super().__init__(self)
+        """
 
 
 class Event:
