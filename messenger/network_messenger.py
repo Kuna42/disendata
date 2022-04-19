@@ -98,9 +98,9 @@ class NetworkMessenger(Thread):
                                      sender=Member(address=address, identification_attribute="address"),##
                                      chat=Chat(name="")))
             return
-        elif message_txt[:2] == S.MSG_START["tmp"]:
+        elif message_txt[:2] == S.MSG_START["tmp"]:  # TODO
             pass
-        elif message_txt[:2] == S.MSG_START["data"]:
+        elif message_txt[:2] == S.MSG_START["data"]:  # TODO
             pass
         elif message_txt[:2] == S.MSG_START["msg"]:
             message_txt = message_txt.split(S.MSG_START["separator"])
@@ -133,7 +133,7 @@ class NetworkMessenger(Thread):
                 return
 
             EventInterfaceDecide(decide_txt=f"Connect to {message.sender.address[0]}? (yes/no)",
-                                 decide_options={"yes": yes, "no": no},) # TODO
+                                 decide_options={"yes": yes, "no": no},)  # TODO
 
         elif command == S.CMD["connection accept"]:
             self.online_members.new_member(member=message.sender)
@@ -144,6 +144,10 @@ class NetworkMessenger(Thread):
 
         elif command == S.CMD["close"]:
             self.online_members.group.remove(message.receiver)
+
+        elif command == S.CMD["stop"]:
+            if message.sender is Member(id_=0):
+                return
 
     def msg_encrypt(self, msg: bytes) -> bytes:
         return msg
@@ -166,3 +170,10 @@ class NetworkMessenger(Thread):
     def run(self) -> None:
         while running:
             msg = self.receive()
+
+    def stop(self) -> None:
+        self.send(Message(text=S.CMD["stop"],
+                          sender=Member(id_=0),
+                          chat=Chat(name="cmd"),
+                          to_member=Member(id_=0),
+                          m_type="cmd"))

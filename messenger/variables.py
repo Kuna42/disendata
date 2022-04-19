@@ -34,6 +34,7 @@ class Running:
 
     def stop(self):
         self.running = False
+        thread_objects.network.stop()
         print(information())
         raise KeyboardInterrupt("Finished, but this Code need to rewritten")
         # TODO add stopping all threads
@@ -139,6 +140,7 @@ class S:
         "connection accept": b"a",
         "information": b"i",
         "close": b"\n",
+        "stop": b"S",
     }
 
 
@@ -151,6 +153,14 @@ class LinuxS:
     DISENDATA_PATH = "../"  # TODO this must be correct
     TEMPLATE_CONFIG_FILE_PATH = DISENDATA_PATH + "messenger/interface/Linux/template/terminal.config"
     DATA_PATH = os.path.expanduser("~") + "/.disendata/"
+
+    LANGUAGE_DICTIONARY_PATH = "/usr/share/dict/"
+    LANGUAGE_DICTIONARY_NAMES = {
+        "de_DE": ("ngerman", "ogerman"),
+        "en_UK": ("british-english",),
+        "en_US": ("american-english",),
+        None: ("words",)
+    }
 
 
 if __name__ == "__main__":
