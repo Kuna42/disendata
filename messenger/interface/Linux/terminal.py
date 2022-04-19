@@ -11,7 +11,7 @@ import time
 
 from messenger.m_abc import Interface
 from messenger.m_bc import Chat, Message, Member
-from messenger.variables import LinuxS, running
+from messenger.variables import LinuxS, S, running, object_library
 from messenger.interface.Linux.configuration import Configuration, LanguageText
 from messenger.events import EventMsgSend, EventNewChat, EventNewMember, EventUpdateDB
 
@@ -141,8 +141,8 @@ class CursesWindow:
         self.update_screen()
         # todo here must be written on
 
-        self.chat_selected = None
-        self.chat_visible = None
+        self.chat_selected = Chat(name="self")
+        self.__chat_visible = Chat(name="self")
 
         self.language = LanguageText(self.config.language)
 
@@ -175,6 +175,19 @@ class CursesWindow:
             pass
 
         self.__focus = new_focus
+
+    @property
+    def chat_visible(self):
+        return self.__chat_visible
+
+    @chat_visible.setter
+    def chat_visible(self, chat: Chat):
+        self.__chat_visible.type_buffer = self.window.type_buffer
+        self.window.type_buffer = chat.type_buffer
+        self.__chat_visible = chat
+        self.window.type.clear()
+        self.update_history()
+        self.update_type()
 
     def _screen_init(self):
         # check screen size
@@ -348,12 +361,7 @@ class CursesWindow:
         elif _input == curses.KEY_RIGHT:
             pass
         elif _input == curses.KEY_ENTER:
-            self.chat_visible.type_buffer = self.window.type_buffer
             self.chat_visible = self.chat_selected
-            self.window.type.clear()
-            self.window.type_buffer = self.chat_visible.type_buffer
-            self.update_type()
-            self.update_history(chat=self.chat_selected) # hm
 
         self.chat_selected = self.window.chat_chat_ord[self.window.chat_act_loc[0] // 2]
 
@@ -386,7 +394,7 @@ class CursesWindow:
                 text=bytes(self.window.type_buffer, "utf-8"),
                 sender=Member(id_=0),
                 chat=self.chat_visible,
-                _timestamp=time.strftime('%H:%M:%S - %d.%m.%Y')
+                _timestamp=time.strftime(S.TIMESTAMP_FORMAT)
             ))
             self.window.type_buffer = ""
             self.chat_visible.type_buffer = ""
@@ -452,7 +460,7 @@ class CursesWindow:
 
             self.update_debug(text=TextCurses(f"Focus: {self.focus}", 1, 0))
             self.update_debug(text=TextCurses(f"Chat:  {self.chat_visible.display_name}", 2, 0))
-            self.update_debug(text=TextCurses(f"Time: {time.strftime('%H:%M:%S - %d.%m.%Y')}", 3, 0))
+            self.update_debug(text=TextCurses(f"Time: {time.strftime(S.TIMESTAMP_FORMAT)}", 3, 0))
 
             # TODO tmp
             self.update_debug(text=TextCurses(f"TMP:   {self.chat_visible.display_name}", 0, 0))
@@ -486,13 +494,14 @@ class Terminal(Interface):
         pass
 
     def show_chat(self, chat):
-        pass
+        self.curses.focus = "history"
+        self.curses.chat_visible = chat
 
     def show_member(self, member):
         pass
 
     def show_chat_list(self, chat_list: list):
-        pass
+        self.curses.focus = "chat"
 
     def show_member_list(self, member_list: list):
         pass
@@ -504,10 +513,10 @@ class Terminal(Interface):
         pass
 
     def run(self):
-        # TODO this is only tmp
-        self.curses.update_chat(chat=Chat(name="self", display_name="command line 1"))  # todo
-        self.curses.update_chat(chat=Chat(name="self2", display_name="command line 2 - super long name without text"))  # todo
-        self.curses.chat_selected = Chat(name="self")
-        self.curses.chat_visible = Chat(name="self")
+        # TODO this is only tmp ↓
+        for chat in object_library[Chat]:
+            self.curses.update_chat(chat=chat)
+        # self.curses.update_chat(chat=Chat(name="self", display_name="command line 1"))  # todo
+        # self.curses.update_chat(chat=Chat(name="self2", display_name="command line 2 - super long name without text"))  # todo
         EventUpdateDB()
         self.curses.run()

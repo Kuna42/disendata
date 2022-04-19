@@ -129,7 +129,7 @@ class LanguageText:
         """
         words = list(words)
         checked_words = ["" * len(words)]
-        for dict_word in open(LinuxS.LANGUAGE_DICTIONARY_PATH + LinuxS.LANGUAGE_WORDS_NAMES[self.language][0]):  # TODO the [0] is only tmp
+        for dict_word in open(LinuxS.LANGUAGE_DICTIONARY_PATH + LinuxS.LANGUAGE_DICTIONARY_NAMES[self.language][0]):  # TODO the [0] is only tmp
             for index, word in enumerate(words):
                 if word == "":
                     continue

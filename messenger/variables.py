@@ -5,7 +5,7 @@
 import os.path
 
 
-class ThreadObjectLibrary:
+class ThreadObjectLibrary:  # todo redundanz in m_bc.py
     def __init__(self):
         self.network = None
         self.events = None
@@ -135,6 +135,7 @@ class S:
         "data": b"d\t",  # is used for data packs
         "separator": b";",  # is used to separate the indicator from the message
     }
+    MSG_INTERNAL_SEPERATOR = b";"  # todo replace this with the "old" seperator
     CMD = {  # commands as a part of every message
         "connection": b"c",
         "connection accept": b"a",
@@ -142,6 +143,7 @@ class S:
         "close": b"\n",
         "stop": b"S",
     }
+    TIMESTAMP_FORMAT = "%H:%M:%S - %d.%m.%Y"
 
 
 class LinuxS:
