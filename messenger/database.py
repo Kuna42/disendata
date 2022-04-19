@@ -315,13 +315,18 @@ class DB:
 
     def update(self):
         """
-        append the members and
+        append the members and chats,
         cut to the database to a smaller one if possible
 
         :return:
         """
         for member in object_library[Member]:
-            self.new_member(member=member)
+            if not self.has_member(member=member):
+                self.new_member(member=member)
+
+        for chat in object_library[Chat]:
+            if not self.has_chat(chat=chat):
+                self.new_chat(chat=chat)
 
         sql_instructions = "VACUUM;"
         with sql_connect(self.__db_name) as db:

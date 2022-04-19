@@ -36,5 +36,9 @@ __licence = "MIT"
 
 if __name__ == "__main__":
     messenger = Messenger()
-    messenger.start()
+    try:
+        messenger.start()
+    except Exception as error:
+        del thread_objects.interface
+        print(error)
     #print(information())

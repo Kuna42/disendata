@@ -27,6 +27,15 @@ class Eventmanager(Thread):
 
 # events
 
+# TODO only TMP this MUST be changed
+
+
+from messenger.m_bc import (
+    EventNewMember, EventNewChat, EventSend, EventMsgSend,
+    EventMsgLoad, EventMsgShow, EventVersion, EventMsgCmd,
+    EventUpdateDB, EventSelfUpdate, EvenLoadChat, EventInterfaceDecide
+)
+"""  # now in m_bc
 class EventUpdateDB(Event):
     def __init__(self):
         super(EventUpdateDB, self).__init__()
@@ -135,3 +144,4 @@ class EventNewChat(Event):
 
 class EvenLoadChat(Event):
     pass
+"""
