@@ -66,7 +66,7 @@ class Configuration:
 
         self.read()
 
-    def change(self, **kwargs):  # todo is this needed?
+    def change(self, **kwargs):  # todo is this needed? no?
         for key in kwargs:
             setattr(self, key, kwargs[key])
 

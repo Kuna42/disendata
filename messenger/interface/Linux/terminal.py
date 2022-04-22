@@ -328,6 +328,8 @@ class CursesWindow:
 
     def update_chat(self, _input: int = None, chat: Chat = None):
         if chat:
+            if chat in self.window.chat_chat_ord:
+                return
             tmp_how_many_chats = len(self.window.chat_chat_ord)
             if tmp_how_many_chats:
                 self.window.chat.addstr(tmp_how_many_chats * 2 - 1, 0, "-" * self.window.chat_d[7])
@@ -338,7 +340,6 @@ class CursesWindow:
             self.window.chat_chat_ord.append(chat)
             return self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])  # todo this needs to be better
 
-        self.chat_selected = self.window.chat_chat_ord[self.window.chat_act_loc[0] // 2]
         self.window.chat.addstr(*self.window.chat_act_loc,
                                 self.chat_selected.display_name[:self.window.chat_d[7] - 3]
                                 .ljust(self.window.chat_d[7] - 3, " ")
@@ -513,7 +514,6 @@ class Terminal(Interface):
         pass
 
     def run(self):
-        # TODO this is only tmp ↓
         for chat in object_library[Chat]:
             self.curses.update_chat(chat=chat)
         # self.curses.update_chat(chat=Chat(name="self", display_name="command line 1"))  # todo
