@@ -143,7 +143,8 @@ class S:
         "close": b"\n",
         "stop": b"S",
     }
-    TIMESTAMP_FORMAT = "%H:%M:%S - %d.%m.%Y"
+    TIMESTAMP_FORMAT = "%Y-%m-%d_%H:%M:%S"
+    TIMESTAMP_FORMAT_2 = "%H:%M:%S - %d.%m.%Y"
 
 
 class LinuxS:

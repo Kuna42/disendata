@@ -106,6 +106,7 @@ class NetworkMessenger(Thread):
             message_txt = message_txt.split(S.MSG_START["separator"])
             message = Message(text=self.msg_encrypt(message_txt[2]), chat=Chat(name=message_txt[1]),
                               sender=Member(address=address, identification_attribute="address"))##
+            self.save_message(message=message)
             EventMsgShow(message=message)
             return message
 

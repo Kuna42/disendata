@@ -11,7 +11,7 @@ import time
 
 from messenger.m_abc import Interface
 from messenger.m_bc import Chat, Message, Member
-from messenger.variables import LinuxS, S, running, object_library
+from messenger.variables import LinuxS, S, running, object_library, thread_objects  # todo the thread_objects could be replaced with better Events
 from messenger.interface.Linux.configuration import Configuration, LanguageText
 from messenger.events import EventMsgSend, EventNewChat, EventNewMember, EventUpdateDB
 
@@ -122,6 +122,7 @@ class CursesWindow:
                     0,  # y active location in the pad
                     0,  # x active location in the pad
                 ]
+                self.history_line_written = 0
                 self.type = None
                 self.type_d = (  # window
                     0,  # n lines
@@ -141,8 +142,15 @@ class CursesWindow:
         self.update_screen()
         # todo here must be written on
 
+        # what chat is selected by the left chat list
         self.chat_selected = Chat(name="self")
+
+        # chat what is shown in the history
         self.__chat_visible = Chat(name="self")
+
+        self.chat_message_cache = [
+            # old messages first
+        ]
 
         self.language = LanguageText(self.config.language)
 
@@ -178,6 +186,10 @@ class CursesWindow:
 
     @property
     def chat_visible(self):
+        """
+        chat what is shown in the history
+        :return:
+        """
         return self.__chat_visible
 
     @chat_visible.setter
@@ -186,7 +198,7 @@ class CursesWindow:
         self.window.type_buffer = chat.type_buffer
         self.__chat_visible = chat
         self.window.type.clear()
-        self.update_history()
+        self.update_history(chat=chat)
         self.update_type()
 
     def _screen_init(self):
@@ -235,7 +247,7 @@ class CursesWindow:
             self.window.type_d[1],
             1,
             self.window.debug_d[1] + 2,
-            self.window.type_d[2] - 1,
+            self.window.type_d[2] - 2,
             self.screen_size[1] - 1,
             1000,  # TODO here is recode needed (y size of the message history)
             self.window.type_d[1],
@@ -374,9 +386,61 @@ class CursesWindow:
 
         self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])  # todo this needs to be better, replace the (0, ...
 
-    def update_history(self, _input: int = None, chat: Chat = None):
+    def update_history(self, _input: int = None, chat: Chat = None, message: Message = None):
         # todo update_history() might be changed that only a few messages would shown
-        pass
+        def show_line_sized_message(message_: Message):
+            history_message = f"[{message_.timestamp}]_{message_.sender.name_given}: " \
+                              f"{' ' * 5}{str(message_.text, 'utf-8')}"  # todo replace the 5 with a variable
+            for str_index in range(0, len(history_message), self.window.history_d[1]):
+                self.window.history_line_written += 1
+                self.window.history.addstr(
+                    self.window.history_line_written, 0,
+                    history_message[str_index:str_index+self.window.history_d[1]]
+                )
+
+        if chat:
+            self.chat_message_cache = thread_objects.network.db.read_chat(chat=chat, count=100)
+            # todo the order of this list have to be inverted
+            self.window.history_line_written = 0
+            self.window.history.clear()
+            self.window.history.addstr(0, 0, f"{chat.display_name}: \t{chat.info}"[:self.window.history_d[1]])
+            for message_in_cache in self.chat_message_cache:
+                show_line_sized_message(message_in_cache)
+
+        if message:
+            if message.chat is not self.chat_visible:
+                return
+            self.chat_message_cache.append(message)
+            show_line_sized_message(message)
+
+
+        # todo python3.10 match case
+
+        if _input is None or _input == -1:
+            pass
+        elif _input == curses.KEY_UP:
+            if self.window.history_act_loc[0] != 0:
+                self.window.history_act_loc[0] -= 1
+        elif _input == curses.KEY_DOWN:
+            if self.window.history_act_loc[0] != self.window.history_line_written:
+                self.window.history_act_loc[0] += 1
+        elif _input == curses.KEY_LEFT:
+            pass
+        elif _input == curses.KEY_RIGHT:
+            pass
+        elif _input == curses.KEY_PPAGE:
+            if self.window.history_act_loc[0] != 0:
+                self.window.history_act_loc[0] -= self.window.history_d[0]
+                if self.window.history_act_loc[0] < 0:
+                    self.window.history_act_loc[0] = 0
+        elif _input == curses.KEY_NPAGE:
+            if self.window.history_act_loc[0] != self.window.history_line_written:
+                self.window.history_act_loc[0] += self.window.history_d[0]
+                if self.window.history_act_loc[0] > self.window.history_line_written:
+                    self.window.history_act_loc[0] = self.window.history_line_written
+
+        #
+        self.window.history.refresh(*self.window.history_act_loc, *self.window.history_d[2:6])
 
     def update_type(self, _input: int = None, text: TextCurses = None):
         # todo python3.10 match case
@@ -391,12 +455,14 @@ class CursesWindow:
         elif _input == curses.KEY_RIGHT:
             pass
         elif _input == curses.KEY_ENTER:
-            EventMsgSend(Message(
+            message = Message(
                 text=bytes(self.window.type_buffer, "utf-8"),
                 sender=Member(id_=0),
                 chat=self.chat_visible,
                 _timestamp=time.strftime(S.TIMESTAMP_FORMAT)
-            ))
+            )
+            EventMsgSend(message)
+            self.update_history(message=message)
             self.window.type_buffer = ""
             self.chat_visible.type_buffer = ""
             self.window.type.clear()
@@ -491,10 +557,10 @@ class Terminal(Interface):
             self.curses.config.path_database = os.path.expanduser("~") + self.curses.config.path_database[1:]
         return self.curses.config.path_database
 
-    def show_msg(self, message):
+    def show_msg(self, message: Member):
         pass
 
-    def show_chat(self, chat):
+    def show_chat(self, chat: Chat):
         self.curses.focus = "history"
         self.curses.chat_visible = chat
 

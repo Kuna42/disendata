@@ -126,7 +126,6 @@ class Chat(BaseAddClass):
         self.info = info
         self.unread_msg = 0  # TODO this must be in the database too
         self.type_buffer = ""  # TODO this must be implemented
-        self.messages = []  # TODO here should be implemented something to fetch the last messages
 
 
 class Message:
@@ -149,7 +148,7 @@ class Message:
                                  f"it must be some of the set [{S.MSG_START.keys()}]")
 
     def __str__(self):
-        return str(self.text)
+        return str(self.text, "utf-8")
 
     @property
     def timestamp(self):
@@ -211,117 +210,3 @@ class ThreadObjectLibrary:
 
 object_library[Member] = []
 object_library[Chat] = []
-
-
-##########
-# events
-
-
-class EventUpdateDB(Event):
-    def __init__(self):
-        super(EventUpdateDB, self).__init__()
-
-    @property
-    def content(self):
-        return {}
-
-
-class EventVersion(Event):
-    def __init__(self):
-        super(EventVersion, self).__init__()
-
-    @property
-    def content(self):
-        return {}
-
-
-class EventInterfaceDecide(Event):
-    def __init__(self, decide_txt: str, decide_options: dict):
-        super(EventInterfaceDecide, self).__init__()
-        self.decide_txt = decide_txt
-        self.decide_options = decide_options
-
-    @property
-    def content(self):
-        return {
-            "decide_options": self.decide_options,
-            "decide_txt": self.decide_txt,
-        }
-
-
-class _EventMember(Event):
-    def __init__(self, member: Member):
-        super(_EventMember, self).__init__()
-        self.member = member
-
-    @property
-    def content(self):
-        return {
-            "member": self.member,
-        }
-
-
-class _EventMessage(Event):
-    def __init__(self, message: Message):
-        super(_EventMessage, self).__init__()
-        self.message = message
-
-    @property
-    def content(self):
-        return {
-            "message": self.message,
-        }
-
-
-class EventSelfUpdate(_EventMember):
-    pass
-
-
-class EventSend(_EventMessage):
-    pass
-
-
-class EventMsgCmd(_EventMessage):
-    pass
-
-
-class EventMsgShow(_EventMessage):
-    pass
-
-
-class EventMsgSend(_EventMessage):
-    pass
-
-
-class EventMsgLoad(Event):
-    def __init__(self, chat: Chat, _timestamp: str):
-        super(EventMsgLoad, self).__init__()
-        self.chat = chat
-        self._timestamp = _timestamp
-
-    @property
-    def content(self):
-        return {
-            "chat": self.chat,
-            "_timestamp": self._timestamp,
-        }
-
-
-class EventNewMember(_EventMember):
-    pass
-
-
-class EventNewChat(Event):
-    def __init__(self, chat: Chat):
-        super(EventNewChat, self).__init__()
-        self.chat = chat
-
-    @property
-    def content(self):
-        return {
-            "chat": self.chat
-        }
-
-
-class EvenLoadChat(Event):
-    pass
