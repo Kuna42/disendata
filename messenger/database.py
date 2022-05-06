@@ -247,7 +247,7 @@ class DB:
 
     def read_chat(self, chat: Chat, count: int = 20) -> [Message]:
         """
-        Read a Chat and returns all (counted) Messages
+        Read a Chat and returns all (counted) Messages, the newest is the last
 
         :param chat: the Chat what are read
         :param count: how many Messages should be returned
@@ -267,6 +267,7 @@ class DB:
         for message in request:
             message_list.append(Message(text=message[4], sender=Member(id_=message[1]),
                                         to_member=Member(id_=message[2]), chat=chat, _timestamp=message[3]))
+        message_list.reverse()
         return message_list
 
     def open_chats(self) -> [Chat]:

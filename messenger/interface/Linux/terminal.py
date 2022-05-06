@@ -400,10 +400,9 @@ class CursesWindow:
 
         if chat:
             self.chat_message_cache = thread_objects.network.db.read_chat(chat=chat, count=100)
-            # todo the order of this list have to be inverted
             self.window.history_line_written = 0
             self.window.history.clear()
-            self.window.history.addstr(0, 0, f"{chat.display_name}: \t{chat.info}"[:self.window.history_d[1]])
+            self.window.history.addstr(0, 0, f"{chat.display_name}: {' ' * 5}{chat.info}"[:self.window.history_d[1]])
             for message_in_cache in self.chat_message_cache:
                 show_line_sized_message(message_in_cache)
 
@@ -412,7 +411,6 @@ class CursesWindow:
                 return
             self.chat_message_cache.append(message)
             show_line_sized_message(message)
-
 
         # todo python3.10 match case
 
@@ -455,6 +453,8 @@ class CursesWindow:
         elif _input == curses.KEY_RIGHT:
             pass
         elif _input == curses.KEY_ENTER:
+            if self.window.type_buffer == "":
+                return
             message = Message(
                 text=bytes(self.window.type_buffer, "utf-8"),
                 sender=Member(id_=0),

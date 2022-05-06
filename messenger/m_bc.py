@@ -2,19 +2,20 @@
 # import
 import os
 
-from messenger.m_abc import BaseAddClass, Event
+from messenger.m_abc import BaseAddClass
 from messenger.variables import S, object_library, thread_objects
 
 
 # classes
 class Member(BaseAddClass):
-    _identify_attr = (
-        "id_",
-        "name_self",
-        "address",
-        "name_generic",
-        "name_given"
-    )
+    _identify_attr = {
+        "id_": int,
+        "name_self": str,
+        "address": tuple,
+        "name_generic": str,
+        "name_given": str
+    }
+    _identify_attr_default = "id_"
 
     """
     def __new__(cls, *args, **kwargs):
@@ -31,10 +32,19 @@ class Member(BaseAddClass):
     def __init__(self, *, address: tuple = ("", 0),
                  id_: int = 0, name_self: str = "", name_given: str = "",
                  name_generic: str = "", cryptic_hash: str = "",
-                 identification_attribute: str = "id_"):
+                 identification_attribute: str = _identify_attr_default):
         if getattr(self, "_BaseAddClass__initialised", False):
             return
         super().__init__(self)
+
+        #self.id_
+        reserved_identify = set()
+        for obj in object_library[Member]:
+            reserved_identify.add(getattr(obj, identification_attribute, None))
+        if id_ in reserved_identify:
+            raise ValueError(f"The identifier (id_) of '{name_generic}' have to be unique")
+            # id_ = (set(range(0, len(reserved_identify) + 1))
+            #        - reserved_identify).pop()
         self.id_ = id_
         self.name_self = name_self
         self.name_given = name_given
@@ -106,19 +116,20 @@ class MemberGroup:
 
 
 class Chat(BaseAddClass):
-    _identify_attr = (
-        # ("name", str),  # todo this might be accepted
-        "name",
-        "display_name"
-    )
+    _identify_attr = {
+        "name": str,
+        "display_name": str
+    }
+    _identify_attr_default = "name"
 
     def __init__(self, *, name, members: MemberGroup = None,
                  display_name: str = "", info: str = "",
-                 identification_attribute: str = "name"):
+                 identification_attribute: str = _identify_attr_default):
         if getattr(self, "_BaseAddClass__initialised", False):
             return
         super().__init__(self)
-        members = MemberGroup()
+        if not members:
+            members = MemberGroup()
         self.name = name
         self.members = members  # [Member]
         #if not hasattr(self, "display_name") and display_name != "":

@@ -11,10 +11,11 @@ from threading import Thread
 
 # classes
 class BaseAddClass(ABC):
-    _identify_attr = (
-        # a tuple of all identification attributes
-        # the first one is the default one
-    )
+    _identify_attr = {
+        # a dict of all identification attributes with type
+        # "id": int,
+    }
+    _identify_attr_default = ""
 
     def __new__(cls, *args, identification_attribute: str = None, **kwargs):
         """
@@ -24,14 +25,35 @@ class BaseAddClass(ABC):
         :param identification_attribute: the attribute, what is the one to check if it exists None = default
         :param kwargs:
         """
-        for obj in object_library[cls]:
-            if identification_attribute not in cls._identify_attr:
-                identification_attribute = cls._identify_attr[0]
-            if getattr(obj, identification_attribute) == kwargs[identification_attribute]:
-                # set attributes
-                for attribute in kwargs:
-                    setattr(obj, attribute, kwargs[attribute])
-                return obj
+        if identification_attribute not in cls._identify_attr:
+            identification_attribute = cls._identify_attr_default
+        if identification_attribute in kwargs:
+            for obj in object_library[cls]:
+                if getattr(obj, identification_attribute) == kwargs[identification_attribute]:
+                    # set attributes
+                    for attribute in kwargs:
+                        setattr(obj, attribute, kwargs[attribute])
+                    return obj
+        else:
+            # create a new identification attribute, what is generic
+            reserved_identify = set()
+            for obj in object_library[cls]:
+                reserved_identify.add(getattr(obj, identification_attribute))
+            if cls._identify_attr[identification_attribute] is int:
+                kwargs[identification_attribute] = (set(range(0, len(reserved_identify) + 1))
+                                                    - reserved_identify).pop()
+            elif cls._identify_attr[identification_attribute] is str:
+                attribute_string = "generic0x"
+                for alphanum in "0123456789abcdef":
+                    if attribute_string + alphanum not in reserved_identify:
+                        kwargs[identification_attribute] = attribute_string + alphanum
+                        break
+            else:
+                raise ValueError(f"Unsupported value of the identification attribute,"
+                                 f"to generate one. "
+                                 f"'{cls._identify_attr[identification_attribute]}' "
+                                 f"is not supported.")
+
         obj = super().__new__(cls)
         object_library[cls].append(obj)
         obj.__initialised = False
