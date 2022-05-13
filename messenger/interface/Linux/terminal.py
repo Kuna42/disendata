@@ -48,6 +48,64 @@ class ChatHistory(TextCurses):
 
 
 class CursesWindow:
+
+    # create values for the windows
+    class Window:
+        def __init__(self):
+            self.debug = None
+            self.debug_d = (  # window
+                0,  # n lines
+                0,  # n cols
+                0,  # begin_y
+                0,  # begin_x
+            )
+            self.chat = None
+            self.chat_d = (  # pad
+                0,  # n lines (visible)
+                0,  # n cols (visible)
+                0,  # begin_y
+                0,  # begin_x
+                0,  # y of the right corner from the window
+                0,  # x of the right corner from the window
+                0,  # max n lines
+                0,  # max n cols
+            )
+            self.chat_act_loc = [
+                0,  # y active location in the pad
+                0,  # x active location in the pad
+            ]
+            self.chat_chat_ord = [
+                # here are all chats in order
+            ]
+            self.history = None
+            self.history_d = (  # pad
+                0,  # n lines (visible)
+                0,  # n cols (visible)
+                0,  # begin_y
+                0,  # begin_x
+                0,  # y of the right bottom corner from the window
+                0,  # x of the right bottom corner from the window
+                0,  # max n lines
+                0,  # max n cols
+            )
+            self.history_act_loc = [
+                0,  # y active location in the pad
+                0,  # x active location in the pad
+            ]
+            self.history_line_written = 0
+            self.type = None
+            self.type_d = (  # window
+                0,  # n lines
+                0,  # n cols
+                0,  # begin_y
+                0,  # begin_x
+            )
+            self.type_act_loc = [
+                0,  # y active location in the window
+                0,  # x active location in the window
+            ]
+            self.type_buffer = ""
+
     def __init__(self):
 
         # load config
@@ -56,10 +114,13 @@ class CursesWindow:
 
         # screen setup
         self.screen = curses.initscr()
+        # save current screen
+        curses.savetty()
         # initialisations of the screen / change some options
         curses.curs_set(0)
         curses.noecho()
-        curses.cbreak()#
+        curses.cbreak(True)
+        curses.setupterm(information(dict)["name"] + "_" + information(dict)["version"])
         self.screen.nodelay(True)
         self.screen.keypad(True)
 
@@ -79,64 +140,7 @@ class CursesWindow:
         self.__focus = "chat"  # sone focus random set to chat
         self._cursor_location = [0, 0]
 
-        # create values for the windows
-        class Window:
-            def __init__(self):
-                self.debug = None
-                self.debug_d = (  # window
-                    0,  # n lines
-                    0,  # n cols
-                    0,  # begin_y
-                    0,  # begin_x
-                )
-                self.chat = None
-                self.chat_d = (  # pad
-                    0,  # n lines (visible)
-                    0,  # n cols (visible)
-                    0,  # begin_y
-                    0,  # begin_x
-                    0,  # y of the right corner from the window
-                    0,  # x of the right corner from the window
-                    0,  # max n lines
-                    0,  # max n cols
-                )
-                self.chat_act_loc = [
-                    0,  # y active location in the pad
-                    0,  # x active location in the pad
-                ]
-                self.chat_chat_ord = [
-                    # here are all chats in order
-                ]
-                self.history = None
-                self.history_d = (  # pad
-                    0,  # n lines (visible)
-                    0,  # n cols (visible)
-                    0,  # begin_y
-                    0,  # begin_x
-                    0,  # y of the right bottom corner from the window
-                    0,  # x of the right bottom corner from the window
-                    0,  # max n lines
-                    0,  # max n cols
-                )
-                self.history_act_loc = [
-                    0,  # y active location in the pad
-                    0,  # x active location in the pad
-                ]
-                self.history_line_written = 0
-                self.type = None
-                self.type_d = (  # window
-                    0,  # n lines
-                    0,  # n cols
-                    0,  # begin_y
-                    0,  # begin_x
-                )
-                self.type_act_loc = [
-                    0,  # y active location in the window
-                    0,  # x active location in the window
-                ]
-                self.type_buffer = ""
-
-        self.window = Window()
+        self.window = CursesWindow.Window()
         self._window_init()
 
         self.update_screen()
@@ -165,6 +169,7 @@ class CursesWindow:
         self.screen.keypad(False)
         curses.echo()
         curses.endwin()
+        curses.resetty()  # todo check if above is necessary
 
     @property
     def focus(self):
@@ -311,12 +316,25 @@ class CursesWindow:
             return getattr(curses, f"KEY_{string}")
         raise ValueError(f"this is not a valid key option: {string}")
 
+    def terminal_resized(self):
+        self._screen_init()
+        self._window_init()
+        self.update_screen()
+        # update all windows
+        self.update_history(refresh=True)
+        self.update_chat(refresh=True)
+        self.update_type()
+        # update actual selected window todo
+        if self.focus == "":
+            pass
+
     def update_screen(self):
         """
         Refresh the screen layout
         :return:
         """
         # background
+        self.screen.clear()
         self.screen.bkgd(curses.color_pair(1))
         self.screen.box()
         self.screen.addstr('┌' + '─' * self.window.debug_d[1] + '┬' + '─' * self.window.history_d[1] + '┐')
@@ -338,17 +356,30 @@ class CursesWindow:
                                      .rjust(self.window.debug_d[1], " "))
         self.window.debug.refresh()
 
-    def update_chat(self, _input: int = None, chat: Chat = None):
+    def update_chat(self, _input: int = None, chat: Chat = None, refresh: bool = False):
+        def seperator(chat_numb):
+            self.window.chat.addstr(chat_numb * 2 - 1, 0, "-" * self.window.chat_d[7])
+
+        def chat_entry(chat_numb, chat_):
+            self.window.chat.addstr(chat_numb * 2, 0,
+                                    chat_.display_name[:self.window.chat_d[7] - 3]
+                                    .ljust(self.window.chat_d[7] - 3, " ")
+                                    + "|" + str(chat_.unread_msg)[:3].rjust(2, " "))
+
+        if refresh:
+            self.window.chat.clear()
+            for chat_line, chat_chat in enumerate(self.window.chat_chat_ord):
+                if 0 < chat_line < len(self.window.chat_chat_ord):
+                    seperator(chat_line)
+                chat_entry(chat_line, chat_chat)
+
         if chat:
             if chat in self.window.chat_chat_ord:
                 return
             tmp_how_many_chats = len(self.window.chat_chat_ord)
             if tmp_how_many_chats:
-                self.window.chat.addstr(tmp_how_many_chats * 2 - 1, 0, "-" * self.window.chat_d[7])
-            self.window.chat.addstr(tmp_how_many_chats * 2, 0,
-                                    chat.display_name[:self.window.chat_d[7] - 3]
-                                    .ljust(self.window.chat_d[7] - 3, " ")
-                                    + "|" + str(chat.unread_msg)[:3].rjust(2, " "))
+                seperator(tmp_how_many_chats)
+            chat_entry(tmp_how_many_chats, chat)
             self.window.chat_chat_ord.append(chat)
             return self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])  # todo this needs to be better
 
@@ -386,7 +417,7 @@ class CursesWindow:
 
         self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])  # todo this needs to be better, replace the (0, ...
 
-    def update_history(self, _input: int = None, chat: Chat = None, message: Message = None):
+    def update_history(self, _input: int = None, chat: Chat = None, message: Message = None, refresh: bool = False):
         # todo update_history() might be changed that only a few messages would shown
         def show_line_sized_message(message_: Message):
             history_message = f"[{message_.timestamp}]_{message_.sender.name_given}: " \
@@ -397,6 +428,8 @@ class CursesWindow:
                     self.window.history_line_written, 0,
                     history_message[str_index:str_index+self.window.history_d[1]]
                 )
+        if refresh:
+            chat = self.chat_visible
 
         if chat:
             self.chat_message_cache = thread_objects.network.db.read_chat(chat=chat, count=100)
@@ -519,12 +552,16 @@ class CursesWindow:
             "info_field": self.update_info_field,
         }
         while running:
+            # input
             char_input = self.input()
-            # if char_input == -1:
-            #     continue
             if self.focus in focus_def.keys():
                 focus_def[self.focus](_input=char_input)
 
+            # terminal resized ?
+            if curses.is_term_resized(*self.screen_size):
+                self.terminal_resized()
+
+            # debug window
             self.update_debug(text=TextCurses(f"Focus: {self.focus}", 1, 0))
             self.update_debug(text=TextCurses(f"Chat:  {self.chat_visible.display_name}", 2, 0))
             self.update_debug(text=TextCurses(f"Time: {time.strftime(S.TIMESTAMP_FORMAT)}", 3, 0))

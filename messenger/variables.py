@@ -19,6 +19,11 @@ class ThreadObjectLibrary:  # todo redundanz in m_bc.py
         self.events.start()
         self.interface.start()
 
+    def stop(self):
+        self.network.stop()
+        self.events.stop()
+        self.interface.stop()
+
 
 # imported
 
@@ -34,9 +39,7 @@ class Running:
 
     def stop(self):
         self.running = False
-        thread_objects.interface.stop()
-        thread_objects.network.stop()
-        thread_objects.events.stop()
+        thread_objects.stop()
         print(information())
         #raise KeyboardInterrupt("Finished, but this Code need to rewritten")
         # TODO add stopping all threads

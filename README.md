@@ -68,6 +68,7 @@ their local device.
   - [ ] decide field
   - [ ] write field
   - [x] configuration file
+  - [x] resize terminal window
 - [x] Database store messages
 - [ ] Database store members and chats
   - [x] add chat
