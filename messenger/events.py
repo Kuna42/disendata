@@ -24,6 +24,9 @@ class Eventmanager(Thread):
                 if event.done() or True:#TODO recode
                     self.events.remove(event)
 
+    def stop(self):
+        pass
+
 
 # events
 class EventUpdateDB(Event):

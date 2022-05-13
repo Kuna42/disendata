@@ -11,7 +11,7 @@ import time
 
 from messenger.m_abc import Interface
 from messenger.m_bc import Chat, Message, Member
-from messenger.variables import LinuxS, S, running, object_library, thread_objects  # todo the thread_objects could be replaced with better Events
+from messenger.variables import LinuxS, S, running, object_library, thread_objects, information  # todo the thread_objects could be replaced with better Events
 from messenger.interface.Linux.configuration import Configuration, LanguageText
 from messenger.events import EventMsgSend, EventNewChat, EventNewMember, EventUpdateDB
 
@@ -531,6 +531,10 @@ class CursesWindow:
 
             # TODO tmp
             self.update_debug(text=TextCurses(f"TMP:   {self.chat_visible.display_name}", 0, 0))
+        print(information(_type=str))
+
+    def stop(self):
+        self.__del__()
 
 
 class Terminal(Interface):
@@ -586,3 +590,6 @@ class Terminal(Interface):
         # self.curses.update_chat(chat=Chat(name="self2", display_name="command line 2 - super long name without text"))  # todo
         EventUpdateDB()
         self.curses.run()
+
+    def stop(self):
+        self.curses.stop()

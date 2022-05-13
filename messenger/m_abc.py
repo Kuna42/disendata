@@ -189,3 +189,11 @@ class Interface(ABC, Thread):
         :return:
         """
         pass
+
+    @abstractmethod
+    def stop(self):
+        """
+        Stopped the Interface, for a clean exit
+        :return:
+        """
+        pass

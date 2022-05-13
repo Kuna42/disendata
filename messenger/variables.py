@@ -34,9 +34,11 @@ class Running:
 
     def stop(self):
         self.running = False
+        thread_objects.interface.stop()
         thread_objects.network.stop()
+        thread_objects.events.stop()
         print(information())
-        raise KeyboardInterrupt("Finished, but this Code need to rewritten")
+        #raise KeyboardInterrupt("Finished, but this Code need to rewritten")
         # TODO add stopping all threads
 
 

@@ -171,6 +171,7 @@ class NetworkMessenger(Thread):
     def run(self) -> None:
         while running:
             msg = self.receive()
+        self.db.update()
 
     def stop(self) -> None:
         self.send(Message(text=S.CMD["stop"],

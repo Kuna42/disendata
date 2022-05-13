@@ -314,6 +314,9 @@ class DB:
                                       name_generic=member[3], cryptic_hash=member[4]))
         return member_list
 
+    def update_chat(self): ...  # TODO
+    def update_member(self): ...  # TODO
+
     def update(self):
         """
         append the members and chats,
