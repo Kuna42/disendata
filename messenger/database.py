@@ -5,7 +5,7 @@ from sqlite3 import connect as sql_connect
 from messenger.m_bc import Member, Chat, Message, MemberGroup
 from messenger.variables import object_library
 
-import os
+import os.path
 
 
 # class
