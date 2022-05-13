@@ -25,6 +25,9 @@ their local device.
   - [ ] connect in WAN
   - [x] IPv4
   - [ ] IPv6
+  - [x] send messages
+  - [ ] send files
+  - [ ] VoIP
 - [ ] Configuration file
   - [ ] Linux
   - [ ] Windows
