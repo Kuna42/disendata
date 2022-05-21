@@ -11,13 +11,25 @@ from messenger.variables import running, event_actions
 # classes
 class Eventmanager(Thread):
     def __init__(self):
+        """
+        Create an Eventmanager, there you can add an event, see Event class
+        """
         super(Eventmanager, self).__init__()
         self.events = []
 
     def append(self, event: Event):
+        """
+        append an Event to an event list
+        :param event:
+        :return:
+        """
         self.events.append(event)
 
     def run(self) -> None:
+        """
+        cycle through all events and execute them
+        :return:
+        """
         while running:
             for event in self.events[:]:
                 event_actions[type(event)](**event.content)
@@ -25,6 +37,10 @@ class Eventmanager(Thread):
                     self.events.remove(event)
 
     def stop(self):
+        """
+        stopped the program
+        :return:
+        """
         pass
 
 

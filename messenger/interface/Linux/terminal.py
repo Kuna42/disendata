@@ -123,6 +123,7 @@ class CursesWindow:
         curses.setupterm(information(dict)["name"] + "_" + information(dict)["version"])
         self.screen.nodelay(True)
         self.screen.keypad(True)
+        self.screen.leaveok(True)
 
         # set colours
         curses.start_color()  # colours
@@ -260,6 +261,7 @@ class CursesWindow:
 
         # the windows are init
         self.window.debug = curses.newwin(*self.window.debug_d)
+        self.window.debug.idlok(True)
         self.window.chat = curses.newpad(*self.window.chat_d[6:8])
         self.window.history = curses.newpad(*self.window.history_d[6:8])
         self.window.type = curses.newwin(*self.window.type_d)
@@ -325,7 +327,7 @@ class CursesWindow:
         self.update_chat(refresh=True)
         self.update_type()
         # update actual selected window todo
-        if self.focus == "":
+        if self.focus == "":  # todo
             pass
 
     def update_screen(self):
@@ -336,32 +338,34 @@ class CursesWindow:
         # background
         self.screen.clear()
         self.screen.bkgd(curses.color_pair(1))
-        self.screen.box()
-        self.screen.addstr('┌' + '─' * self.window.debug_d[1] + '┬' + '─' * self.window.history_d[1] + '┐')
-        for i in range(self.window.debug_d[0]):
-            self.screen.addstr('│' + ' ' * self.window.debug_d[1] + '│' + ' ' * self.window.history_d[1] + '│')
-        self.screen.addstr('├' + '─' * self.window.debug_d[1] + '┤' + ' ' * self.window.history_d[1] + '│')
-        for i in range(self.window.chat_d[0] - self.window.type_d[0] - 1):
-            self.screen.addstr('│' + ' ' * self.window.chat_d[1] + '│' + ' ' * self.window.history_d[1] + '│')
-        self.screen.addstr('│' + ' ' * self.window.chat_d[1] + '├' + '─' * self.window.history_d[1] + '┤')
-        for i in range(self.window.type_d[0]):
-            self.screen.addstr('│' + ' ' * self.window.chat_d[1] + '│' + ' ' * self.window.type_d[1] + '│')
-        self.screen.addstr('└' + '─'*self.window.chat_d[1] + '┴')
+
+        c_chat = self.window.debug_d[1]  # column size of the chat and debug window
+        c_history = self.window.history_d[1]  # column size of the history and type window
+        self.screen.insstr(
+            0, 0,
+            ('┌' + '─' * c_chat + '┬' + '─' * c_history + '┐\n') +
+            ('│' + ' ' * c_chat + '│' + ' ' * c_history + '│\n') * self.window.debug_d[0] +
+            ('├' + '─' * c_chat + '┤' + ' ' * c_history + '│\n') +
+            ('│' + ' ' * c_chat + '│' + ' ' * c_history + '│\n') * (self.window.chat_d[0] - self.window.type_d[0] - 1) +
+            ('│' + ' ' * c_chat + '├' + '─' * c_history + '┤\n') +
+            ('│' + ' ' * c_chat + '│' + ' ' * c_history + '│\n') * self.window.type_d[0] +
+            ('└' + '─' * c_chat + '┴' + '─' * c_history + '┘')
+        )
         self.screen.refresh()
 
     def update_debug(self, text: TextCurses = None):
         if text:
-            self.window.debug.addstr(text.y, 0, text.text[:self.window.debug_d[1] - text.x]
+            self.window.debug.insstr(text.y, 0, text.text[:self.window.debug_d[1] - text.x]
                                      .ljust(self.window.debug_d[1] - text.x, " ")
                                      .rjust(self.window.debug_d[1], " "))
         self.window.debug.refresh()
 
     def update_chat(self, _input: int = None, chat: Chat = None, refresh: bool = False):
         def seperator(chat_numb):
-            self.window.chat.addstr(chat_numb * 2 - 1, 0, "-" * self.window.chat_d[7])
+            self.window.chat.insstr(chat_numb * 2 - 1, 0, "-" * self.window.chat_d[7])
 
         def chat_entry(chat_numb, chat_):
-            self.window.chat.addstr(chat_numb * 2, 0,
+            self.window.chat.insstr(chat_numb * 2, 0,
                                     chat_.display_name[:self.window.chat_d[7] - 3]
                                     .ljust(self.window.chat_d[7] - 3, " ")
                                     + "|" + str(chat_.unread_msg)[:3].rjust(2, " "))
@@ -383,7 +387,7 @@ class CursesWindow:
             self.window.chat_chat_ord.append(chat)
             return self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])  # todo this needs to be better
 
-        self.window.chat.addstr(*self.window.chat_act_loc,
+        self.window.chat.insstr(*self.window.chat_act_loc,
                                 self.chat_selected.display_name[:self.window.chat_d[7] - 3]
                                 .ljust(self.window.chat_d[7] - 3, " ")
                                 + "|" + str(self.chat_selected.unread_msg)[:3].rjust(2, " "),
@@ -409,7 +413,7 @@ class CursesWindow:
 
         self.chat_selected = self.window.chat_chat_ord[self.window.chat_act_loc[0] // 2]
 
-        self.window.chat.addstr(*self.window.chat_act_loc,
+        self.window.chat.insstr(*self.window.chat_act_loc,
                                 self.chat_selected.display_name[:self.window.chat_d[7] - 3]
                                 .ljust(self.window.chat_d[7] - 3, " ")
                                 + "|" + str(self.chat_selected.unread_msg)[:3].rjust(2, " "),
@@ -424,7 +428,7 @@ class CursesWindow:
                               f"{' ' * 5}{str(message_.text, 'utf-8')}"  # todo replace the 5 with a variable
             for str_index in range(0, len(history_message), self.window.history_d[1]):
                 self.window.history_line_written += 1
-                self.window.history.addstr(
+                self.window.history.insstr(
                     self.window.history_line_written, 0,
                     history_message[str_index:str_index+self.window.history_d[1]]
                 )
@@ -435,7 +439,7 @@ class CursesWindow:
             self.chat_message_cache = thread_objects.network.db.read_chat(chat=chat, count=100)
             self.window.history_line_written = 0
             self.window.history.clear()
-            self.window.history.addstr(0, 0, f"{chat.display_name}: {' ' * 5}{chat.info}"[:self.window.history_d[1]])
+            self.window.history.insstr(0, 0, f"{chat.display_name}: {' ' * 5}{chat.info}"[:self.window.history_d[1]])
             for message_in_cache in self.chat_message_cache:
                 show_line_sized_message(message_in_cache)
 
@@ -500,7 +504,7 @@ class CursesWindow:
             self.chat_visible.type_buffer = ""
             self.window.type.clear()
         elif _input == curses.KEY_BACKSPACE:
-            self.window.type.addstr(*self.window.type_act_loc, " ")
+            self.window.type.insstr(*self.window.type_act_loc, " ")
             self.window.type_buffer = self.window.type_buffer[:-1]
         elif self._is_printable_char(_input):
             self.window.type_buffer += chr(_input)
@@ -519,9 +523,9 @@ class CursesWindow:
             # line_text = " ".join(self.language.spellcheck(*line_text.split(" "),  # TODO bad idea
             #                                               marker_start="",
             #                                               marker_end=""))
-            self.window.type.addstr(line_index, 0, line_text)
+            self.window.type.insstr(line_index, 0, line_text)
         # cursor
-        self.window.type.addstr(*self.window.type_act_loc, "_", curses.A_BLINK)
+        self.window.type.insstr(*self.window.type_act_loc, "_", curses.A_BLINK)
         self.window.type.refresh()
 
     def update_write_field(self, visible: bool = True, _input: int = None,
@@ -541,6 +545,16 @@ class CursesWindow:
         if not visible:
             return self.update_screen()
         self.focus = "info_field"
+
+    def refresh_all(self):
+        """
+        You have to call this, to see all changes in the terminal
+        :return:
+        """
+        self.window.debug.refresh()
+        self.window.chat.refresh(0, 0, *self.window.chat_d[2:6]) # todo this have to be better, without the 0, 0
+        self.window.history.refresh(*self.window.history_act_loc, *self.window.history_d[2:6])
+        self.window.type.refresh()
 
     def run(self):
         focus_def = {
@@ -565,7 +579,7 @@ class CursesWindow:
             self.update_debug(text=TextCurses(f"Focus: {self.focus}", 1, 0))
             self.update_debug(text=TextCurses(f"Chat:  {self.chat_visible.display_name}", 2, 0))
             self.update_debug(text=TextCurses(f"Time: {time.strftime(S.TIMESTAMP_FORMAT)}", 3, 0))
-
+            self.update_debug(text=TextCurses(f"help: {self.config.k_help}", 4, 0))
             # TODO tmp
             self.update_debug(text=TextCurses(f"TMP:   {self.chat_visible.display_name}", 0, 0))
         print(information(_type=str))
@@ -580,7 +594,7 @@ class Terminal(Interface):
         super(Terminal, self).__init__()
 
     def __del__(self):
-        pass
+        del self.curses
 
     def input(self, text: str = "") -> str:
         self.curses.update_write_field(visible=True, text=TextCurses(text))
@@ -591,7 +605,7 @@ class Terminal(Interface):
         self.curses.update_decide_field(visible=True, text=TextCurses(decide_txt),
                                         decide_options=decide_options)
         # todo wait for output
-        return True  # todo should be rewritten, it should send back, what was the decide
+        return True  # todo should be rewritten, it should send back, what was to decide
 
     def get_db_name(self) -> str:
         if self.curses.config.path_database[0] == "~":

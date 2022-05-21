@@ -25,15 +25,6 @@ thread_objects.network = NetworkMessenger(thread_objects.interface.get_db_name()
 fill_event_actions()
 
 
-# variables
-__name = "messenger"
-__version = "0.0.2"
-__author = "Kuna42"
-__www = "kuna42@web.de"
-__copyright = "(C) 2021"
-__licence = "MIT"
-
-
 if __name__ == "__main__":
     messenger = Messenger()
     try:
