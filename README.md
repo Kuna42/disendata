@@ -48,7 +48,7 @@ their local device.
   - [ ] How to use the API (with little examples)
 - [ ] README.md consumer friendly
 - [ ] Binaries
-  - [ ] `.deb`, 
+  - [ ] `.deb`
   - [ ] `.AppImage`
   - [ ] `.apk`
   - [ ] `.exe`
