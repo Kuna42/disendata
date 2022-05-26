@@ -57,33 +57,33 @@ running = Running()  # could be different
 
 
 # variables
-event_actions = {}
+# event_actions = {}  # TODO change this, this have to be in the events.execute..
 
 
-def fill_event_actions():  # TODO could be better
-    from messenger.events import (EventVersion, EventUpdateDB, EventSelfUpdate,
-                                  EventInterfaceDecide, EventSend, EventNewMember,
-                                  EventMsgCmd, EventMsgShow, EventMsgSend, EventMsgLoad,
-                                  EventNewChat)
-
-    event_actions.clear()
-    event_actions.update({
-        EventMsgCmd: thread_objects.network.msg_command,
-        EventMsgShow: thread_objects.interface.show_msg,
-        EventMsgSend: thread_objects.network.send_message,
-        EventMsgLoad: thread_objects.network.load_message,
-        "chat_load": thread_objects.network.db.read_chat,
-        EventNewChat: thread_objects.network.db.new_chat,
-        "member_new": None,
-        "member_load": None,
-        EventInterfaceDecide: thread_objects.interface.decide,  # decide_options: dict of str: method
-        "self_stuff": None,
-        EventSelfUpdate: None,
-        EventVersion: information,
-        EventNewMember: thread_objects.network.new_member,
-        EventUpdateDB: thread_objects.network.db.update,
-        EventSend: thread_objects.network.send,
-    })
+# def fill_event_actions():  # TODO could be better
+#     from messenger.events import (EventVersion, EventUpdateDB, EventSelfUpdate,
+#                                   EventInterfaceDecide, EventSend, EventNewMember,
+#                                   EventMsgCmd, EventMsgShow, EventMsgSend, EventMsgLoad,
+#                                   EventNewChat)
+#
+#     # event_actions.clear() not needed anymore
+#     event_actions.update({
+#         #EventMsgCmd: thread_objects.network.msg_command,
+#         #EventMsgShow: thread_objects.interface.show_msg,
+#         #EventMsgSend: thread_objects.network.send_message,
+#         #EventMsgLoad: thread_objects.network.load_message,
+#         #"chat_load": thread_objects.network.db.read_chat,
+#         #EventNewChat: thread_objects.network.db.new_chat,
+#         "member_new": None,
+#         "member_load": None,
+#         #EventInterfaceDecide: thread_objects.interface.decide,  # decide_options: dict of str: method
+#         "self_stuff": None,
+#         #EventSelfUpdate: None,
+#         #EventVersion: information,
+#         #EventNewMember: thread_objects.network.new_member,
+#         #EventUpdateDB: thread_objects.network.db.update,
+#         #EventSend: thread_objects.network.send,
+#     })
 
 
 connection = [("", 36000)]

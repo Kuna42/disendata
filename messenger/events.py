@@ -1,11 +1,12 @@
 #
 
 # import
+import abc
 from threading import Thread
 
 from messenger.m_abc import Event
 from messenger.m_bc import Message, Chat, Member
-from messenger.variables import running, event_actions
+from messenger.variables import running, thread_objects, information
 
 
 # classes
@@ -32,8 +33,8 @@ class Eventmanager(Thread):
         """
         while running:
             for event in self.events[:]:
-                event_actions[type(event)](**event.content)
-                if event.done() or True:#TODO recode
+                event.execute()
+                if event.done():
                     self.events.remove(event)
 
     def stop(self):
@@ -49,18 +50,16 @@ class EventUpdateDB(Event):
     def __init__(self):
         super(EventUpdateDB, self).__init__()
 
-    @property
-    def content(self):
-        return {}
+    def command(self) -> None:
+        thread_objects.network.db.update()
 
 
-class EventVersion(Event):
+class EventVersion(Event):  # todo could be removed
     def __init__(self):
         super(EventVersion, self).__init__()
 
-    @property
-    def content(self):
-        return {}
+    def command(self) -> None:
+        information()
 
 
 class EventInterfaceDecide(Event):
@@ -76,8 +75,11 @@ class EventInterfaceDecide(Event):
             "decide_txt": self.decide_txt,
         }
 
+    def command(self) -> None:
+        thread_objects.interface.decide(decide_options=self.decide_options, decide_txt=self.decide_txt)
 
-class _EventMember(Event):
+
+class _EventMember(Event, abc.ABC):
     def __init__(self, member: Member):
         super(_EventMember, self).__init__()
         self.member = member
@@ -89,7 +91,7 @@ class _EventMember(Event):
         }
 
 
-class _EventMessage(Event):
+class _EventMessage(Event, abc.ABC):
     def __init__(self, message: Message):
         super(_EventMessage, self).__init__()
         self.message = message
@@ -102,41 +104,51 @@ class _EventMessage(Event):
 
 
 class EventSelfUpdate(_EventMember):
-    pass
+    def command(self) -> None:
+        # todo add selfupdate
+        pass
 
 
 class EventSend(_EventMessage):
-    pass
+    def command(self) -> None:
+        thread_objects.network.send(message=self.message)
 
 
 class EventMsgCmd(_EventMessage):
-    pass
+    def command(self) -> None:
+        thread_objects.network.msg_command(message=self.message)
 
 
 class EventMsgShow(_EventMessage):
-    pass
+    def command(self) -> None:
+        thread_objects.interface.show_msg(message=self.message)
 
 
 class EventMsgSend(_EventMessage):
-    pass
+    def command(self) -> None:
+        thread_objects.network.send_message(message=self.message)
 
 
-class EventMsgLoad(Event):
-    def __init__(self, chat: Chat, _timestamp: str):
+class EventMsgLoad(Event):  # todo check if this is obsolete
+    def __init__(self, chat: Chat, timestamp: str):
         super(EventMsgLoad, self).__init__()
         self.chat = chat
-        self._timestamp = _timestamp
+        self.timestamp = timestamp
 
     @property
     def content(self):
         return {
             "chat": self.chat,
-            "_timestamp": self._timestamp,
+            "_timestamp": self.timestamp,
         }
+
+    def command(self) -> None:
+        thread_objects.network.load_message(chat=self.chat, timestamp=self.timestamp)
 
 
 class EventNewMember(_EventMember):
-    pass
+    def command(self) -> None:
+        thread_objects.network.new_member(member=self.member)
 
 
 class EventNewChat(Event):
@@ -150,7 +162,11 @@ class EventNewChat(Event):
             "chat": self.chat
         }
 
+    def command(self) -> None:
+        thread_objects.network.db.new_chat(chat=self.chat)
 
-class EvenLoadChat(Event):
-    pass
+
+class EvenLoadChat(Event):  # too check if this is valid or obsolete
+    def command(self) -> None:
+        thread_objects.network.db.read_chat()
 

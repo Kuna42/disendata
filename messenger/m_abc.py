@@ -111,15 +111,21 @@ class Event:
         self._is_done = _is_done
         thread_objects.events.append(self)
 
-    @property
     @abstractmethod
-    def content(self):
+    def command(self) -> None:
         """
-        Returned a dict with all content of the event
+        insert here the custom command for each Event
+        :return:
+        """
+        pass
 
-        :return: dict
+    def execute(self) -> None:
         """
-        return {}
+        Execute the event and set _is_done to True
+        :return: _is_done
+        """
+        self.command()
+        self._is_done = True
 
     def done(self) -> bool:
         return self._is_done

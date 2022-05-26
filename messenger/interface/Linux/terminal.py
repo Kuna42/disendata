@@ -9,7 +9,7 @@
 import os
 import time
 
-from messenger.m_abc import Interface
+from messenger.m_abc import Interface, Event
 from messenger.m_bc import Chat, Message, Member
 from messenger.variables import LinuxS, S, running, object_library, thread_objects, information  # todo the thread_objects could be replaced with better Events
 from messenger.interface.Linux.configuration import Configuration, LanguageText
@@ -42,9 +42,17 @@ class TextCurses:
         raise ValueError(f"'{item}' is not a valid Value of this class. Only 'y' and 'x' are valid.")
 
 
-class ChatHistory(TextCurses):
-    def __init__(self, chat: Chat = None):
-        super(ChatHistory, self).__init__()
+# event for resize the terminal
+class TerminalResized(Event):
+    def __init__(self):
+        super(TerminalResized, self).__init__(False)
+
+    def command(self) -> None:
+
+        thread_objects.interface.curses.terminal_size()
+
+    def done(self) -> bool:
+        return False
 
 
 class CursesWindow:
@@ -145,6 +153,8 @@ class CursesWindow:
         self._window_init()
 
         self.update_screen()
+
+        self._terminal_resized = True
         # todo here must be written on
 
         # what chat is selected by the left chat list
@@ -237,16 +247,17 @@ class CursesWindow:
             1000,  # TODO here is recode needed (y = size of the chats * 2 - 1)
             self.window.debug_d[1]
         )
-        self.window.type_d = [
-            (self.screen_size[0] - 3) * (100 - self.config.w_line_message_type) // 100,
+
+        tmp_type_d_0 = (self.screen_size[0] - 3) * (100 - self.config.w_line_message_type) // 100
+        if self.config.w_line_type_new_message > tmp_type_d_0:
+            tmp_type_d_0 = self.config.w_line_type_new_message
+
+        self.window.type_d = (
+            tmp_type_d_0,
             (self.screen_size[1] - 3) - self.window.debug_d[1],
-            None,
+            self.screen_size[0] - tmp_type_d_0 - 1,
             self.window.chat_d[1] + 2,
-        ]
-        if self.config.w_line_type_new_message > self.window.type_d[0]:
-            self.window.type_d[0] = self.config.w_line_type_new_message
-        self.window.type_d[2] = self.screen_size[0] - self.window.type_d[0] - 1
-        self.window.type_d = tuple(self.window.type_d)
+        )
 
         self.window.history_d = (
             (self.screen_size[0] - 3) - self.window.type_d[0],
@@ -293,6 +304,7 @@ class CursesWindow:
         # it returns -1 if nothing is pressed
         return -1
 
+    #@staticmethod
     def _is_printable_char(self, ch: int or str):  # TODO this need to be better
         if type(ch) is int:
             pass
@@ -303,6 +315,7 @@ class CursesWindow:
 
         return 31 < ch < 127  # or 160 < ch < 255
 
+    #@staticmethod
     def _ord(self, string: str) -> int:
         """
         This is for transferring the values from self.config
@@ -319,9 +332,7 @@ class CursesWindow:
         raise ValueError(f"this is not a valid key option: {string}")
 
     def terminal_resized(self):
-        self._screen_init()
-        self._window_init()
-        self.update_screen()
+        self._terminal_resized = False
         # update all windows
         self.update_history(refresh=True)
         self.update_chat(refresh=True)
@@ -329,6 +340,15 @@ class CursesWindow:
         # update actual selected window todo
         if self.focus == "":  # todo
             pass
+
+    def terminal_size(self):
+        # terminal resized ?
+        if not curses.is_term_resized(*self.screen_size):
+            return
+        self._screen_init()
+        self._window_init()
+        self.update_screen()
+        self._terminal_resized = True
 
     def update_screen(self):
         """
@@ -479,8 +499,10 @@ class CursesWindow:
 
     def update_type(self, _input: int = None, text: TextCurses = None):
         # todo python3.10 match case
-        if _input is None or _input == -1:
+        if _input is None:
             pass
+        elif _input == -1:
+            return
         elif _input == curses.KEY_UP:
             pass
         elif _input == curses.KEY_DOWN:
@@ -504,7 +526,7 @@ class CursesWindow:
             self.chat_visible.type_buffer = ""
             self.window.type.clear()
         elif _input == curses.KEY_BACKSPACE:
-            self.window.type.insstr(*self.window.type_act_loc, " ")
+            self.window.type.addstr(*self.window.type_act_loc, " ")
             self.window.type_buffer = self.window.type_buffer[:-1]
         elif self._is_printable_char(_input):
             self.window.type_buffer += chr(_input)
@@ -523,9 +545,9 @@ class CursesWindow:
             # line_text = " ".join(self.language.spellcheck(*line_text.split(" "),  # TODO bad idea
             #                                               marker_start="",
             #                                               marker_end=""))
-            self.window.type.insstr(line_index, 0, line_text)
+            self.window.type.addstr(line_index, 0, line_text)
         # cursor
-        self.window.type.insstr(*self.window.type_act_loc, "_", curses.A_BLINK)
+        self.window.type.addstr(*self.window.type_act_loc, "_", curses.A_BLINK)
         self.window.type.refresh()
 
     def update_write_field(self, visible: bool = True, _input: int = None,
@@ -552,7 +574,7 @@ class CursesWindow:
         :return:
         """
         self.window.debug.refresh()
-        self.window.chat.refresh(0, 0, *self.window.chat_d[2:6]) # todo this have to be better, without the 0, 0
+        self.window.chat.refresh(0, 0, *self.window.chat_d[2:6])  # todo this have to be better, without the 0, 0
         self.window.history.refresh(*self.window.history_act_loc, *self.window.history_d[2:6])
         self.window.type.refresh()
 
@@ -565,6 +587,9 @@ class CursesWindow:
             "decide_field": self.update_decide_field,
             "info_field": self.update_info_field,
         }
+
+        TerminalResized()
+
         while running:
             # input
             char_input = self.input()
@@ -572,8 +597,7 @@ class CursesWindow:
                 focus_def[self.focus](_input=char_input)
 
             # terminal resized ?
-            if curses.is_term_resized(*self.screen_size):
-                self.terminal_resized()
+            self.terminal_resized() if self._terminal_resized else None
 
             # debug window
             self.update_debug(text=TextCurses(f"Focus: {self.focus}", 1, 0))
@@ -581,7 +605,7 @@ class CursesWindow:
             self.update_debug(text=TextCurses(f"Time: {time.strftime(S.TIMESTAMP_FORMAT)}", 3, 0))
             self.update_debug(text=TextCurses(f"help: {self.config.k_help}", 4, 0))
             # TODO tmp
-            self.update_debug(text=TextCurses(f"TMP:   {self.chat_visible.display_name}", 0, 0))
+            self.update_debug(text=TextCurses(f"TMP: events {len(thread_objects.events.events)}", 0, 0))
         print(information(_type=str))
 
     def stop(self):
@@ -638,7 +662,7 @@ class Terminal(Interface):
         for chat in object_library[Chat]:
             self.curses.update_chat(chat=chat)
         # self.curses.update_chat(chat=Chat(name="self", display_name="command line 1"))  # todo
-        # self.curses.update_chat(chat=Chat(name="self2", display_name="command line 2 - super long name without text"))  # todo
+        # self.curses.update_chat(chat=Chat(name="self2", display_name="command line 2 - super long name without text"))
         EventUpdateDB()
         self.curses.run()
 

@@ -3,7 +3,7 @@
 # import
 import os
 
-from messenger.variables import thread_objects, information, fill_event_actions
+from messenger.variables import thread_objects, information
 from messenger.events import Eventmanager
 from messenger.network_messenger import NetworkMessenger
 from messenger.m_bc import Messenger
@@ -20,9 +20,6 @@ else:
 thread_objects.interface = Interface()
 
 thread_objects.network = NetworkMessenger(thread_objects.interface.get_db_name())
-
-
-fill_event_actions()
 
 
 if __name__ == "__main__":
