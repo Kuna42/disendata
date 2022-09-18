@@ -158,6 +158,12 @@ class LinuxS:
     """
     CONFIG_FILE_PATH = os.path.expanduser("~") + "/.config/disendata/"
     CONFIG_FILE_NAME = CONFIG_FILE_PATH + "terminal.config"
+    LANGUAGE_FILE_PATH = CONFIG_FILE_PATH + "/language/"
+    LANGUAGE_FILE_NAMES = {
+        "de_DE",
+        "en_UK",
+        "en_US",
+    }
     DISENDATA_PATH = "../"  # TODO this must be correct
     TEMPLATE_CONFIG_FILE_PATH = DISENDATA_PATH + "messenger/interface/Linux/template/terminal.config"
     DATA_PATH = os.path.expanduser("~") + "/.disendata/"
