@@ -160,7 +160,7 @@ class NetworkMessenger(Thread):
         self.db.new_message(message=message)
 
     def load_message(self, chat: Chat, timestamp=None):
-        pass
+        self.db.read_chat(chat=chat, count=10)  # todo this have to be recoded
 
     def send_message(self, message: Message):
         self.save_message(message)
