@@ -114,6 +114,31 @@ class CursesWindow:
             ]
             self.type_buffer = ""
 
+            self.field = None
+            self.field_d = (  # pad
+                0,  # n lines (visible)
+                0,  # n cols (visible)
+                0,  # begin_y
+                0,  # begin_x
+                0,  # y of the right bottom corner from the window
+                0,  # x of the right bottom corner from the window
+                0,  # max n lines
+                0,  # max n cols
+            )
+            self.field_act_loc = [
+                0,  # y active location in the pad
+                0,  # x active location in the pad
+            ]
+            self.field_act_len = 0
+
+            self.keybinding = None
+            self.keybinding_d = (  # window
+                0,  # n lines
+                0,  # n cols
+                0,  # begin_y
+                0,  # begin_x
+            )
+
     def __init__(self):
 
         # load config
@@ -167,7 +192,7 @@ class CursesWindow:
             # old messages first
         ]
 
-        self.language = LanguageText(self.config.language)
+        self.language = LanguageText(self.config)
 
     def __del__(self):
         """
@@ -270,12 +295,30 @@ class CursesWindow:
             self.window.type_d[1],
         )
 
+        self.window.field_d = (
+            self.screen_size[0] - 2,
+            self.window.history_d[1],
+            1,
+            self.window.history_d[3],
+            self.screen_size[0] - 2,
+            self.screen_size[1] - 1,
+            1000,
+            self.window.history_d[7],
+        )
+
+        self.window.keybinding_d = (
+            *self.window.chat_d[0:4],
+        )
+
         # the windows are init
         self.window.debug = curses.newwin(*self.window.debug_d)
-        self.window.debug.idlok(True)
+        #self.window.debug.idlok(True)
         self.window.chat = curses.newpad(*self.window.chat_d[6:8])
         self.window.history = curses.newpad(*self.window.history_d[6:8])
         self.window.type = curses.newwin(*self.window.type_d)
+
+        self.window.field = curses.newpad(*self.window.field_d[6:8])
+        self.window.keybinding = curses.newwin(*self.window.keybinding_d)
 
     def input(self) -> int:
         ##
@@ -286,7 +329,9 @@ class CursesWindow:
             tab_rotating = {"type": "chat", "chat": "history", "history": "type"}
             self.focus = tab_rotating.get(self.focus, self.focus)  # TODO this should be separate
         elif _input == self._ord(self.config.k_help):
-            self.update_info_field(visible=True, text=TextCurses(self.language.translate("help_text")))
+            self.update_screen_field()
+            self.update_keybinding()
+            self.update_info_field(visible=True, text=TextCurses("information_text"))
         elif _input == self._ord(self.config.k_config):
             pass
         elif _input == self._ord(self.config.k_new_member):
@@ -369,6 +414,27 @@ class CursesWindow:
             ('│' + ' ' * c_chat + '│' + ' ' * c_history + '│\n') * (self.window.chat_d[0] - self.window.type_d[0] - 1) +
             ('│' + ' ' * c_chat + '├' + '─' * c_history + '┤\n') +
             ('│' + ' ' * c_chat + '│' + ' ' * c_history + '│\n') * self.window.type_d[0] +
+            ('└' + '─' * c_chat + '┴' + '─' * c_history + '┘')
+        )
+        self.screen.refresh()
+
+    def update_screen_field(self):
+        """
+        Refresh the screen layout
+        :return:
+        """
+        # background
+        self.screen.clear()
+        self.screen.bkgd(curses.color_pair(1))
+
+        c_chat = self.window.debug_d[1]  # column size of the chat and debug window
+        c_history = self.window.history_d[1]  # column size of the history and type window
+        self.screen.insstr(
+            0, 0,
+            ('┌' + '─' * c_chat + '┬' + '─' * c_history + '┐\n') +
+            ('│' + ' ' * c_chat + '│' + ' ' * c_history + '│\n') * self.window.debug_d[0] +
+            ('├' + '─' * c_chat + '┤' + ' ' * c_history + '│\n') +
+            ('│' + ' ' * c_chat + '│' + ' ' * c_history + '│\n') * self.window.chat_d[0] +
             ('└' + '─' * c_chat + '┴' + '─' * c_history + '┘')
         )
         self.screen.refresh()
@@ -550,23 +616,77 @@ class CursesWindow:
         self.window.type.addstr(*self.window.type_act_loc, "_", curses.A_BLINK)
         self.window.type.refresh()
 
+    def update_keybinding(self):
+        self.window.keybinding.clear()
+        self.window.keybinding.insstr(
+            0, 0,
+            self.language.translate(
+                "keybindings_explanation",
+                max_lines=self.window.keybinding_d[0],
+                max_chars=self.window.keybinding_d[1]
+            )
+        )
+        self.window.keybinding.refresh()
+
     def update_write_field(self, visible: bool = True, _input: int = None,
                            text: TextCurses = None, get_buffer: bool = False):
-        if not visible:
-            return self.update_screen()
+        if (not visible) or (_input == curses.KEY_ENTER):
+            self.focus = "chat"
+            self.update_screen()
+            self.refresh_all()
+            return
         self.focus = "write_field"
 
     def update_decide_field(self, visible: bool = True, _input: int = None,
                             text: TextCurses = None, decide_options: dict = None):
         if not visible:
-            return self.update_screen()
+            self.focus = "chat"
+            self.update_screen()
+            self.refresh_all()
+            return
         self.focus = "decide_field"
 
     def update_info_field(self, visible: bool = True, _input: int = None,
                           text: TextCurses = None):
+        def to_main():
+            self.focus = "chat"
+            self.update_screen()
+            self.refresh_all()
+            return
+
         if not visible:
-            return self.update_screen()
-        self.focus = "info_field"
+            return to_main()
+
+        if text is not None:
+            self.focus = "info_field"
+            if text.y is None:
+                text.y = 0
+            if text.x is None:
+                text.x = 0
+            translated_text = self.language.translate(
+                    text.text,
+                    max_lines=self.window.field_d[6],
+                    max_chars=self.window.field_d[7]
+            )
+            self.window.field_act_len = len(translated_text.split("\n"))
+            self.window.field.clear()
+            self.window.field.insstr(
+                text.y,
+                text.x,
+                translated_text
+            )
+            self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
+
+        if _input == curses.KEY_ENTER:
+            return to_main()
+        elif _input == curses.KEY_UP:
+            if self.window.field_act_loc[0] != 0:
+                self.window.field_act_loc[0] -= 1
+                self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
+        elif _input == curses.KEY_DOWN:
+            if self.window.field_act_loc[0] != self.window.field_act_len - 1:
+                self.window.field_act_loc[0] += 1
+                self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
 
     def refresh_all(self):
         """
