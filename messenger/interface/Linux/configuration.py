@@ -122,10 +122,12 @@ class LanguageText:
         :param max_chars: specify how many lines are maximum printable, 0 = None limitation
         :return: a translated and cut version of the identifier
         """
-        with sqlite3.connect(LinuxS.LANGUAGE_FILE_PATH + self.language) as database:
-            sql_instruction = "SELECT translation FROM text WHERE id = ?;"
+        with sqlite3.connect(LinuxS.LANGUAGE_FILE_PATH + self.language + ".db") as database:
+            sql_instruction = "SELECT translation FROM text WHERE id_string = ?;"
             request = database.execute(sql_instruction, (text,))
-            text = request.fetchall()[0][0]
+            text = request.fetchall()
+            print(text)
+            text = text[0][0]
 
         text = text.format(config=self.__config)
         simple_text = text.split("\n")

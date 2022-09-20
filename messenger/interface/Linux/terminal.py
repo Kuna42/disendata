@@ -331,7 +331,14 @@ class CursesWindow:
         elif _input == self._ord(self.config.k_help):
             self.update_screen_field()
             self.update_keybinding()
-            self.update_info_field(visible=True, text=TextCurses("information_text"))
+            self.update_info_field(
+                visible=True,
+                text=TextCurses(self.language.translate(
+                    "information",
+                    max_lines=self.window.field_d[6],
+                    max_chars=self.window.field_d[7]
+                ))
+            )
         elif _input == self._ord(self.config.k_config):
             pass
         elif _input == self._ord(self.config.k_new_member):
@@ -663,17 +670,12 @@ class CursesWindow:
                 text.y = 0
             if text.x is None:
                 text.x = 0
-            translated_text = self.language.translate(
-                    text.text,
-                    max_lines=self.window.field_d[6],
-                    max_chars=self.window.field_d[7]
-            )
-            self.window.field_act_len = len(translated_text.split("\n"))
+            self.window.field_act_len = len(text.text.split("\n"))
             self.window.field.clear()
             self.window.field.insstr(
                 text.y,
                 text.x,
-                translated_text
+                text.text
             )
             self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
 
