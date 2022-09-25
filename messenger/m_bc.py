@@ -194,6 +194,47 @@ class Filecheck:
         return True
 
 
+def auto_linebreak(text: str, max_char_in_line: int, max_lines: int = None, split_char: str = None):
+    """
+    add linebreaks into a sting after a specific length of a line
+    :param text: the raw text
+    :param max_char_in_line: how many chars fit maximum in the line
+    :param max_lines: if a line maximum is there, it would be marked with ...
+    :param split_char: to split words that are separated with a special char like space
+    :return:
+    """
+    simple_text = text.split("\n")
+    for text_line_count, text_line in enumerate(simple_text):
+        new_text_line = ""
+        text_char = 0
+        while text_char < len(text_line):
+            text_part = text_line[text_char:(text_char + max_char_in_line)]
+            if (split_char is None) or (len(text_part) < max_char_in_line - 1):
+                new_text_line += text_part + "\n"
+                text_char += max_char_in_line
+                continue
+            text_part = text_part.rsplit(split_char, 1)
+            if len(text_part) == 1:
+                new_text_line += text_part[0] + "\n"
+                text_char += max_char_in_line
+                continue
+            new_text_line += text_part[0] + "\n"
+            text_char += len(text_part[0]) + 1
+
+        if text_line != "":
+            new_text_line = new_text_line[:-1]
+        simple_text[text_line_count] = new_text_line
+
+    if max_lines is None:
+        return "\n".join(simple_text)
+
+    text = "\n".join(simple_text).split("\n")
+    if len(text) > max_lines:
+        text = text[0:max_lines]
+        text[max_lines - 1] = "..."
+    return "\n".join(text)
+
+
 class Messenger:
     def start(self):
         thread_objects.network.db.open_chats()

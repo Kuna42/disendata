@@ -103,6 +103,14 @@ class Configuration:
             config_file.write(config_text)
 
 
+class DataText:
+    def __getattribute__(self, item):
+        try:
+            return object.__getattribute__(self, item)
+        except AttributeError:
+            return None
+
+
 class LanguageText:
     def __init__(self, config: Configuration):
         self.__config = config
@@ -114,39 +122,23 @@ class LanguageText:
     def __str__(self):
         return self.language
 
-    def translate(self, text: str, max_lines=0, max_chars=0) -> str:  # TODO this need to be written
+    def translate(self, text: str, data: DataText = None) -> str:
         """
-        This translates the standard text into a specific language
+        This translates the standard text into a specific language,
+        the text can hold fields for formatting it: config, data
         :param text: the identifier for the translation
-        :param max_lines: specify how many lines are maximum printable, 0 = None limitation
-        :param max_chars: specify how many lines are maximum printable, 0 = None limitation
+        :param data: other data witch are for the translation needed
         :return: a translated and cut version of the identifier
         """
         with sqlite3.connect(LinuxS.LANGUAGE_FILE_PATH + self.language + ".db") as database:
             sql_instruction = "SELECT translation FROM text WHERE id_string = ?;"
             request = database.execute(sql_instruction, (text,))
             text = request.fetchall()
-            print(text)
             text = text[0][0]
 
-        text = text.format(config=self.__config)
-        simple_text = text.split("\n")
-        if max_chars:
-            for text_line_count, text_line in enumerate(simple_text):
-                new_text_line = ""
-                for text_char in range(0, len(text_line), max_chars):
-                    new_text_line += text_line[text_char:(text_char + max_chars)] + "\n"
-                if text_line != "":
-                    new_text_line = new_text_line[:-1]
-                simple_text[text_line_count] = new_text_line
-            simple_text = "\n".join(simple_text).split("\n")
-
-        if max_lines:
-            if len(simple_text) > max_lines:
-                simple_text = simple_text[0:max_lines]
-                simple_text[max_lines-1] = "..."
-        text = "\n".join(simple_text)
-
+        if data is None:
+            data = DataText()
+        text = text.format(config=self.__config, data=data)
         return text
 
     def spellcheck(self, *words: str, marker_start: str = "~~", marker_end: str = "~~") -> [str]:  # TODO actual a bad idea, maybe it could be better
