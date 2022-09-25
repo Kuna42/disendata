@@ -95,7 +95,7 @@ __version = "0.0.2"
 __author = "Kuna42"
 __www = "kuna42@web.de"
 __copyright = "(C) 2022"
-__licence = "MIT"
+__licence = "GNU GPLv3"
 
 
 def information(_type=str) -> str or tuple or dict:

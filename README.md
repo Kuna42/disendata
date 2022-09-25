@@ -3,9 +3,8 @@ It is developed in [Python3.10](https://www.python.org/downloads/release/python-
 (libraries: os, sockets, curses, sqlite, time, threading)
 with the environment [PyCharm Community Edition](https://www.jetbrains.com/pycharm/download)
 by [Kuna42](https://github.com/Kuna42)
-under the licence [MIT](https://opensource.org/licenses/MIT)
-but the licence is not fixed, 
-it could be changed in later versions.
+under the licence [GNU GPLv3](https://opensource.org/licenses/GPL-3.0)
+but the licence could be changed in later versions.
 ## Messenger
 This Messenger is coded for local Networks without a server.
 The idea behind this messenger is that nobody has to set up a 
@@ -14,7 +13,7 @@ their local device.
 
 ### Issues
 
-#### Goals for version 1.0
+#### Goals for version 0.2
 
 - [x] Database, which store messages
   - [ ] `~/.disendata` add and manage it
@@ -59,15 +58,15 @@ their local device.
 
 #### Goals for version 0.1:
 - [ ] TUI Linux
-  - [ ] load messages
-  - [ ] save messages
+  - [x] load messages
+  - [x] save messages
   - [ ] add/edit member
   - [ ] add/edit chat
   - [ ] edit self
   - [x] type shown
   - [ ] copy and paste
   - [ ] start screen
-  - [ ] information field
+  - [x] information field
   - [ ] decide field
   - [ ] write field
   - [x] configuration file
