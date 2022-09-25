@@ -349,6 +349,10 @@ class CursesWindow:
             pass
         elif _input == self._ord(self.config.k_debug):
             pass
+        elif _input == self._ord(self.config.k_escape):
+            self.focus = "chat"
+            self.update_screen()
+            self.refresh_all()
         elif _input == self._ord(self.config.k_exit):
             running.stop()
         else:
@@ -371,7 +375,7 @@ class CursesWindow:
     def _ord(self, string: str) -> int:
         """
         This is for transferring the values from self.config
-        :param string: like TAB, F[], PAGE_UP, PAGE_DOWN, ENTER, DEL, INS, BACKSPACE,
+        :param string: like TAB, F[..], PAGE_UP, PAGE_DOWN, ENTER, DEL, INS, BACKSPACE,
         LEFT, UP, RIGHT, DOWN, HOME, END, PRINT
         :return: integer of this string with ord()
         """
