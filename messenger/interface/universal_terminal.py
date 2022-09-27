@@ -195,3 +195,6 @@ class Terminal(Interface):
     def run(self):
         while running:
             self.commands(self.input())
+
+    def stop(self) -> None: # is this right?
+        del self
