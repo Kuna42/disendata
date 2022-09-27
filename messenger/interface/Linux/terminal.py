@@ -8,6 +8,7 @@
 # import
 import os
 import time
+import re
 
 from messenger.m_abc import Interface, Event
 from messenger.m_bc import Chat, Message, Member, auto_linebreak
@@ -134,6 +135,7 @@ class CursesWindow:
             self.field_input = [
                 # (name: str, y: int, x: int, regex: str, placeholder_chars: int, actual_data: str),
             ]
+            self.field_act_input = -1
             self.field_finally = None
 
             self.keybinding = None
@@ -330,29 +332,76 @@ class CursesWindow:
         _input = self.screen.getch()
         if _input == -1:
             return -1  # could be None
+        # change selected window
         elif _input == self._ord(self.config.k_switch_window):
             tab_rotating = {"type": "chat", "chat": "history", "history": "type"}
             self.focus = tab_rotating.get(self.focus, self.focus)  # TODO this should be separate
+        # help page
         elif _input == self._ord(self.config.k_help):
             self.update_screen_field()
             self.update_keybinding()
-            self.update_info_field(
+            self.update_field(
                 visible=True,
-                text=TextCurses(auto_linebreak(
+                text=TextCurses(
                     text=self.language.translate("information"),
-                    max_lines=self.window.field_d[6],
-                    max_char_in_line=self.window.field_d[7],
-                    split_char=" ",
-                ))
+                ),
+                finally_do=None
             )
+        # configuration page
         elif _input == self._ord(self.config.k_config):
-            pass
+            def finally_input(*args, **configs):
+                for name, value in configs.items():
+                    setattr(
+                        self.config,
+                        name,
+                        value
+                    )
+                self.config.update()
+            self.update_screen_field()
+            self.update_keybinding()
+            self.update_field(
+                visible=True,
+                text=TextCurses(
+                    text=self.language.translate("configuration"),
+                ),
+                finally_do=finally_input
+            )
         elif _input == self._ord(self.config.k_new_member):
-            pass
+            def finally_input(*args, **member_data): # TODO write this
+                pass
+            self.update_screen_field()
+            self.update_keybinding()
+            self.update_field(
+                visible=True,
+                text=TextCurses(
+                    text=self.language.translate("member_add"),
+                ),
+                finally_do=finally_input
+            )
         elif _input == self._ord(self.config.k_new_chat):
-            pass
+            def finally_input(*args, **chat_data): # TODO write this
+                pass
+            self.update_screen_field()
+            self.update_keybinding()
+            self.update_field(
+                visible=True,
+                text=TextCurses(
+                    text=self.language.translate("chat_add"),
+                ),
+                finally_do=finally_input
+            )
         elif _input == self._ord(self.config.k_edit_chat):
-            pass
+            def finally_input(*args, **chat_data):
+                pass
+            self.update_screen_field()
+            self.update_keybinding()
+            self.update_field(
+                visible=True,
+                text=TextCurses(
+                    text=self.language.translate("chat_edit"),
+                ),
+                finally_do=finally_input
+            )
         elif _input == self._ord(self.config.k_debug):
             pass
         elif _input == self._ord(self.config.k_escape):
@@ -648,22 +697,44 @@ class CursesWindow:
         self.window.keybinding.refresh()
 
     def update_field(self, visible: bool = True, _input: int = None,
-                     text: TextCurses = None):#todo use the finally method for the field
+                     text: TextCurses = None, finally_do: callable = None):
         """
 
         :param visible: is this window visible, default True
         :param _input: the input char
         :param text: The text what is shown up, formatted:
-        an insert place: <name|number how many chars|"regex">
+        an insert place: <"name"|number how many chars|"regex"|"predefined value">
+
+        :param finally_do: what should be done with the input? Your method here
+        it must be like: def finally_method(*args, field_name = field_value, ..): ...
         :return:
         """
         def to_main():
+            self.window.field_finally(dict(
+                (field_input[0], field_input[5]) for field_input in self.window.field_input
+            ))
+            self.window.field_finally = None
+            self.window.field_string = ""
+            self.window.field_input = []
+            self.window.field_act_input = -1
+            self.window.field_act_lines = 0
+            self.window.field_act_loc = [0, 0]
             self.focus = "chat"
             self.update_screen()
             self.refresh_all()
 
         if not visible:
             return to_main()
+
+        if (finally_do is None and self.window.field_finally is None) or (text is not None):
+            def finally_method(*args, **kwargs):
+                """
+                do something with the input
+                :param kwargs: dict with name and value
+                :return:
+                """
+                pass
+            self.window.field_finally = finally_method
 
         if text is not None:
             self.focus = "field"
@@ -672,23 +743,33 @@ class CursesWindow:
             if text.x is None:
                 text.x = 0
             #
+            self.window.field_input = []
             pure_text = ""
             raw_text = text.text
             while raw_text.count("<"):
                 insert_field = ["", 0, 0, "", 0, ""]
                 #           (name, y, x, regex, placeholder, actual_data),
-                part_pure_text, raw_text = raw_text.split("<", 1)
+                part_pure_text, raw_text = raw_text.split("<\"", 1)
                 pure_text += part_pure_text
-                insert_field[0], raw_text = raw_text.split("|", 1)
+                insert_field[0], raw_text = raw_text.split("\"|", 1)
                 insert_field[4], raw_text = raw_text.split("|\"", 1)
-                insert_field[3], raw_text = raw_text.split("\">", 1)
+                insert_field[3], raw_text = raw_text.split("\"|\"", 1)
+                insert_field[5], raw_text = raw_text.split("\">", 1)
                 pure_text_lines = pure_text.split("\n")
                 insert_field[1] = len(pure_text_lines) - 1 + text.y
                 insert_field[2] = len(pure_text_lines[-1]) + text.x
+                # str to int
+                insert_field[1] = int(insert_field[1])
+                insert_field[2] = int(insert_field[2])
+                insert_field[4] = int(insert_field[4])
                 self.window.field_input.append(insert_field)
-                pure_text += " " * insert_field[4]
+                pure_text += insert_field[5][-insert_field[4]:].rjust(insert_field[4], "_")
+            if not text.text.count("<"):
+                pure_text = text.text
             self.window.field_string = pure_text
-            self.window.field_act_lines = len(text.text.split("\n"))
+            self.window.field_act_lines = len(self.window.field_string.split("\n"))
+            self.window.field_act_input = int(len(self.window.field_input) > 0) - 1
+
             self.window.field.clear()
             self.window.field.insstr(
                 text.y,
@@ -700,73 +781,48 @@ class CursesWindow:
                 )
             )
             self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
+        if _input == -1:
+            return
+        elif _input is None:
+            return
+        elif _input == curses.KEY_ENTER:
+            if self.window.field_act_input == -1:
+                return to_main()
+            if re.search(
+                    self.window.field_input[self.window.field_act_input][3],
+                    self.window.field_input[self.window.field_act_input][5]
+            ):
+                self.window.field_act_input += 1
+                # the regex is found in this input field, go to the next input field
+            if self.window.field_act_input == len(self.window.field_input):
+                self.window.field_act_input = 0  # todo is this necessary?
+                return to_main()
+            # go to the input field in the pad
+            self.window.field_act_loc[0] = self.window.field_input[self.window.field_act_input][1]
 
-        if _input == curses.KEY_ENTER: ## todo here should be ...
-            return to_main()
         elif _input == curses.KEY_UP:
             if self.window.field_act_loc[0] != 0:
                 self.window.field_act_loc[0] -= 1
-                self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
         elif _input == curses.KEY_DOWN:
             if self.window.field_act_loc[0] != self.window.field_act_lines - 1:
                 self.window.field_act_loc[0] += 1
-                self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
-
-
-    def update_write_field(self, visible: bool = True, _input: int = None,
-                           text: TextCurses = None, get_buffer: bool = False):
-        if (not visible) or (_input == curses.KEY_ENTER):
-            self.focus = "chat"
-            self.update_screen()
-            self.refresh_all()
-            return
-        self.focus = "write_field"
-
-    def update_decide_field(self, visible: bool = True, _input: int = None,
-                            text: TextCurses = None, decide_options: dict = None):
-        if not visible:
-            self.focus = "chat"
-            self.update_screen()
-            self.refresh_all()
-            return
-        self.focus = "decide_field"
-
-    def update_info_field(self, visible: bool = True, _input: int = None,
-                          text: TextCurses = None):
-        def to_main():
-            self.focus = "chat"
-            self.update_screen()
-            self.refresh_all()
-            return
-
-        if not visible:
-            return to_main()
-
-        if text is not None:
-            self.focus = "info_field"
-            if text.y is None:
-                text.y = 0
-            if text.x is None:
-                text.x = 0
-            self.window.field_act_lines = len(text.text.split("\n"))
-            self.window.field.clear()
-            self.window.field.insstr(
-                text.y,
-                text.x,
-                text.text
+        elif _input == curses.KEY_BACKSPACE:
+            act_field = self.window.field_input[self.window.field_act_input]
+            act_field[5] = act_field[5][:-1]
+            self.window.field.addstr(
+                act_field[1],
+                act_field[2],
+                act_field[5][-act_field[4]:].rjust(act_field[4], "_")
             )
-            self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
-
-        if _input == curses.KEY_ENTER:
-            return to_main()
-        elif _input == curses.KEY_UP:
-            if self.window.field_act_loc[0] != 0:
-                self.window.field_act_loc[0] -= 1
-                self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
-        elif _input == curses.KEY_DOWN:
-            if self.window.field_act_loc[0] != self.window.field_act_lines - 1:
-                self.window.field_act_loc[0] += 1
-                self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
+        elif self._is_printable_char(_input):
+            act_field = self.window.field_input[self.window.field_act_input]
+            act_field[5] += chr(_input)
+            self.window.field.addstr(
+                act_field[1],
+                act_field[2],
+                act_field[5][-act_field[4]:].rjust(act_field[4], "_")
+            )
+        self.window.field.refresh(*self.window.field_act_loc, *self.window.field_d[2:6])
 
     def refresh_all(self):
         """
@@ -783,9 +839,7 @@ class CursesWindow:
             "chat": self.update_chat,
             "history": self.update_history,
             "type": self.update_type,
-            "write_field": self.update_write_field,
-            "decide_field": self.update_decide_field,
-            "info_field": self.update_info_field,
+            "field": self.update_field,
         }
 
         TerminalResized()
@@ -825,13 +879,12 @@ class Terminal(Interface):
         del self.curses
 
     def input(self, text: str = "") -> str:
-        self.curses.update_write_field(visible=True, text=TextCurses(text))
+        self.curses.update_field(visible=True, text=TextCurses(text))
         # todo wait for output
         return ""
 
     def decide(self, decide_txt: str, decide_options: dict) -> bool:
-        self.curses.update_decide_field(visible=True, text=TextCurses(decide_txt),
-                                        decide_options=decide_options)
+        self.curses.update_field(visible=True, text=TextCurses(decide_txt))
         # todo wait for output
         return True  # todo should be rewritten, it should send back, what was to decide
 

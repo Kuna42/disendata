@@ -194,7 +194,7 @@ class Filecheck:
         return True
 
 
-def auto_linebreak(text: str, max_char_in_line: int, max_lines: int = None, split_char: str = None):
+def auto_linebreak(text: str, max_char_in_line: int, max_lines: int = None, split_char: str = None) -> str:
     """
     add linebreaks into a sting after a specific length of a line
     :param text: the raw text
