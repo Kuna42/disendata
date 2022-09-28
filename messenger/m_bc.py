@@ -54,9 +54,9 @@ class Member(BaseAddClass):
         for obj in object_library[Member]:
             reserved_identify.add(getattr(obj, identification_attribute, None))
         if id_ in reserved_identify:
-            raise ValueError(f"The identifier (id_) of '{name_generic}' have to be unique")
-            # id_ = (set(range(0, len(reserved_identify) + 1))
-            #        - reserved_identify).pop()
+            #raise ValueError(f"The identifier (id_) of '{name_generic}' have to be unique")
+            id_ = (set(range(0, len(reserved_identify) + 1)) #todo is this right?
+                   - reserved_identify).pop()
         self.id_ = id_
         self.name_self = name_self
         self.name_given = name_given

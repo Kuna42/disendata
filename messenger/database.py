@@ -195,7 +195,7 @@ class DB:
         :param member: the id_ is necessary to find the member
         :return:
         """
-        sql_instructions = "SELECT * FROM m_chats WHERE name_self = ? OR name_given = ? OR name_generic = ?;"
+        sql_instructions = "SELECT * FROM m_member WHERE name_self = ? OR name_given = ? OR name_generic = ?;"
         with sql_connect(self.__db_name) as db:
             db_cursor = db.cursor()
             db_cursor.execute(sql_instructions, (member.name_self, member.name_given, member.name_generic))

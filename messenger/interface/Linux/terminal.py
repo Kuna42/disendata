@@ -394,15 +394,17 @@ class CursesWindow:
                     cryptic_hash="",#todo this have to be implemented
                 )
                 EventNewMember(new_member)
-                EventNewChat(Chat(
-                    name="member_chat_" + member_data["name_generic"],
+                new_chat = Chat(
+                    name="memberChatII" + member_data["name_generic"],
                     members=MemberGroup(
                         Member(id_=0),
                         new_member
                     ),
                     display_name=member_data["name_given"],
                     info="Chat with the member",
-                ))
+                )
+                EventNewChat(new_chat)
+                self.update_chat(chat=new_chat)
             self.update_screen_field()
             self.update_keybinding()
             self.update_field(
@@ -800,7 +802,7 @@ class CursesWindow:
             return to_main()
 
         if refresh:
-            refresh_field()
+            return refresh_field()
 
         if text is not None:
             self.focus = "field"
@@ -813,6 +815,7 @@ class CursesWindow:
                     :return:
                     """
                     pass
+                finally_do = finally_method
 
             self.window.field_finally = finally_do
             self.window.field_input = []
@@ -847,7 +850,7 @@ class CursesWindow:
                 pure_text = text.text
             self.window.field_string = pure_text
             self.window.field_act_input = int(len(self.window.field_input) > 0) - 1
-            refresh_field()
+            return refresh_field()
 
         if _input == -1:
             return
@@ -954,7 +957,7 @@ class Terminal(Interface):
         return ""
 
     def decide(self, decide_txt: str, decide_options: dict) -> bool:
-        self.curses.update_field(visible=True, text=TextCurses(decide_txt))
+        #self.curses.update_field(visible=True, text=TextCurses(decide_txt)) # TODO display error
         # todo wait for output
         return True  # todo should be rewritten, it should send back, what was to decide
 

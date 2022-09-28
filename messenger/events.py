@@ -149,6 +149,7 @@ class EventMsgLoad(Event):  # todo check if this is obsolete
 class EventNewMember(_EventMember):
     def command(self) -> None:
         thread_objects.network.new_member(member=self.member)
+        thread_objects.network.db.new_member(member=self.member)
 
 
 class EventNewChat(Event):
