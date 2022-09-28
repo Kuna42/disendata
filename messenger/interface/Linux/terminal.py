@@ -10,6 +10,7 @@ import os
 import time
 import re
 import bisect
+import logging
 
 from messenger.m_abc import Interface, Event
 from messenger.m_bc import Chat, Message, Member, MemberGroup, auto_linebreak, auto_linebreak_with_linebreak_info
@@ -41,6 +42,7 @@ class TextCurses:
         return self.text
 
     def __getitem__(self, item):
+        logging.error(f"(terminal:45) - ValueError('{item}' is not a valid Value of TextCurses. Only 'y' and 'x' are valid.)")
         raise ValueError(f"'{item}' is not a valid Value of this class. Only 'y' and 'x' are valid.")
 
 
@@ -198,7 +200,7 @@ class CursesWindow:
         # todo here must be written on
 
         # what chat is selected by the left chat list
-        self.chat_selected = Chat(name="self")
+        self.chat_selected = Chat(name="self", display_name="Self")
 
         # chat what is shown in the history
         self.__chat_visible = Chat(name="self")
@@ -208,12 +210,14 @@ class CursesWindow:
         ]
 
         self.language = LanguageText(self.config)
+        logging.info("Created CursesInterface..")
 
     def __del__(self):
         """
         Redo all options
         :return:
         """
+        logging.info("Closing CursesInterface..")
         curses.curs_set(1)
         curses.nocbreak()
         self.screen.nodelay(False)
@@ -261,6 +265,7 @@ class CursesWindow:
         # check screen size
         max_y, max_x = self.screen.getmaxyx()
         if max_y < self.config.min_y or max_x < self.config.min_x:
+            logging.error("(terminal:268) - The size of the window is too small.")
             raise BlockingIOError("The size of the window is too small.")  # TODO this should be a better error
         self.screen_size = (max_y, max_x)
 
@@ -464,6 +469,7 @@ class CursesWindow:
             pass
         elif type(ch) is str:
             if len(ch) - 1:
+                logging.error(f"(terminal:472) - This Value '{ch}' must be exactly one single character, not more or less.")
                 raise ValueError(f"This Value '{ch}' must be exactly one single character, not more or less.")
             ch = ord(ch)
 
@@ -483,6 +489,7 @@ class CursesWindow:
             return getattr(curses, f"KEY_{string}")
         elif string in {"UP", "DOWN", "RIGHT", "LEFT", "HOME", "END", "BACKSPACE", "ENTER", "PRINT"}:
             return getattr(curses, f"KEY_{string}")
+        logging.error(f"(terminal:492) - this is not a valid key option: {string}")
         raise ValueError(f"this is not a valid key option: {string}")
 
     def terminal_resized(self):

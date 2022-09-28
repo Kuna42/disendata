@@ -2,11 +2,21 @@
 
 # import
 import os
+import logging
+import time
 
-from messenger.variables import thread_objects, information
+from messenger.variables import thread_objects, information, LinuxS
 from messenger.events import Eventmanager
 from messenger.network_messenger import NetworkMessenger
 from messenger.m_bc import Messenger
+
+# for logging set variables
+logging.basicConfig(
+    filename=LinuxS.DATA_LOG_PATH + time.strftime("%Y-%m-%d-%H-%M-%S") + ".log",
+    filemode="w",
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+    level=logging.DEBUG
+)
 
 thread_objects.events = Eventmanager()
 
@@ -23,6 +33,7 @@ thread_objects.network = NetworkMessenger(thread_objects.interface.get_db_name()
 
 
 if __name__ == "__main__":
+    logging.info("Starting Messenger ...")
     messenger = Messenger()
     try:
         messenger.start()

@@ -2,11 +2,12 @@
 
 # import
 from sqlite3 import connect as sql_connect
+
 from messenger.m_bc import Member, Chat, Message, MemberGroup
 from messenger.variables import object_library
 
 import os.path
-
+import logging
 
 # class
 class DB:
@@ -80,8 +81,10 @@ class DB:
         :return:
         """
         if type(chat.name) is not str:
+            logging.error(f"(database:84) - the table name '{chat.name}' should be a String")
             raise ValueError("the table name should be a String")
         if not chat.name.isalnum():
+            logging.error(f"(database:87) - the table name '{chat.name}' must be alpha numeric")
             raise ValueError("the table name must be alpha numeric")
         sql_instructions = f"CREATE TABLE IF NOT EXISTS chat_{chat.name} (" \
                            f"msg_id                    INTEGER PRIMARY KEY AUTOINCREMENT," \
@@ -115,6 +118,7 @@ class DB:
         if member.name_generic == "":
             pass
         elif not member.name_generic.isalnum():
+            logging.error(f"(database:121) - the member name '{member.name_generic}' must be alpha numeric")
             raise ValueError("the member name must be alpha numeric")
 
         sql_instructions = "INSERT INTO m_member (name_self, name_given, name_generic, cryptic_hash) " \
@@ -135,8 +139,10 @@ class DB:
         :return:
         """
         if type(message.chat.name) is not str:
+            logging.error(f"(database:142) - the message target table-name '{message.chat.name}' should be a String")
             raise ValueError("the message target table-name should be a String")
         if not message.chat.name.isalnum():
+            logging.error(f"(database:145) - the target table-name '{message.chat.name}' must be alpha numeric")
             raise ValueError("the target table-name must be alpha numeric")
 
         sql_instructions = f"INSERT INTO chat_{message.chat.name} " \
@@ -232,6 +238,7 @@ class DB:
         :return: a Message or None if none message with the timestamp was found
         """
         if not chat.name.isalnum():
+            logging.error(f"(database:241) - The name of the Chat '{chat.name}' should be Alpha Numeric")
             raise ValueError("The name of the Chat should be Alpha Numeric")
         sql_instructions = f"SELECT * FROM chat_{chat.name} WHERE timestamp = ?;"
 
@@ -254,6 +261,7 @@ class DB:
         :return: returned a list of Messages
         """
         if not chat.name.isalnum():
+            logging.error(f"(database:264) - The name of the Chat '{chat.name}' should be Alpha Numeric")
             raise ValueError("The name of the Chat should be Alpha Numeric")
         sql_instructions = f"SELECT * FROM chat_{chat.name} ORDER BY timestamp DESC LIMIT {count};"
 

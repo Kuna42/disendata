@@ -1,9 +1,9 @@
 #
-
 # import
 from threading import Thread
 import socket
 import os
+import logging
 
 from messenger.m_bc import Member, MemberGroup, Message, Chat, Filecheck
 from messenger.variables import S, running, connection
@@ -28,6 +28,8 @@ class NetworkMessenger(Thread):
         }
 
         if not Filecheck.file(db_name):
+            logging.error("(network_messenger:31) - An unknown Error occurred in "
+                          "\'disendata/messenger/network_messenger\'.")
             raise FileNotFoundError("An unknown Error occurred in \'disendata/messenger/network_messenger\'.")
 
         self.db = DB(db_name=db_name)
@@ -104,7 +106,8 @@ class NetworkMessenger(Thread):
             pass
         elif message_txt[:2] == S.MSG_START["msg"]:
             message_txt = message_txt.split(S.MSG_START["separator"])
-            message = Message(text=self.msg_encrypt(message_txt[2]), chat=Chat(name=message_txt[1]),
+            logging.info(f"message_txt: {message_txt}")
+            message = Message(text=self.msg_encrypt(message_txt[2]), chat=Chat(name=str(message_txt[1], "ascii")),
                               sender=Member(address=address, identification_attribute="address"))##
             self.save_message(message=message)
             EventMsgShow(message=message)
@@ -122,6 +125,7 @@ class NetworkMessenger(Thread):
     def msg_command(self, message: Message):
         command = message.text
         if command[0:1] not in S.CMD.values():
+            logging.error(f"(network_messenger:127) - This command \"{command}\" does not exists")
             raise ValueError(f"This command \"{command}\" does not exists")
         # check, what command it is, todo can be in 3.10 with match case
         if command == S.CMD["connection"]:
