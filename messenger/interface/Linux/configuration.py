@@ -94,9 +94,11 @@ class Configuration:
         config_text = ""
         with open(LinuxS.CONFIG_FILE_NAME, "r") as config_file:
             for line in config_file:
-                if not line.startswith("# ") or line != "\n":
+                if not (line.startswith("# ") or line == "\n"):
                     line = line.split(" = ", 1)
                     line[1] = getattr(self, line[0])
+                    if type(line[1]) is int:
+                        line[1] = str(line[1])
                     line = " = ".join(line) + "\n"
                 config_text += line
         with open(LinuxS.CONFIG_FILE_NAME, "w") as config_file:

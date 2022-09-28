@@ -33,6 +33,18 @@ class Member(BaseAddClass):
                  id_: int = 0, name_self: str = "", name_given: str = "",
                  name_generic: str = "", cryptic_hash: str = "",
                  identification_attribute: str = _identify_attr_default):
+        """
+
+        :param address: your internet address
+        :param id_: the environment (db) specific id, type this only,
+        when you know the id of a member
+        :param name_self: how he calls himself
+        :param name_given: the nane you give
+        :param name_generic: an generic (mostly, identifiable) name
+        :param cryptic_hash: (todo implement this)
+        :param identification_attribute: this is only useful to change,
+        when you want to catch a specific member with one attribute
+        """
         if getattr(self, "_BaseAddClass__initialised", False):
             return
         super().__init__(self)
@@ -74,6 +86,11 @@ class Member(BaseAddClass):
 
 class MemberGroup:
     def __init__(self, *members: Member, sort_key: str = "actual_ip"):
+        """
+
+        :param members: a list of members
+        :param sort_key: how the group is sorted
+        """
         self.name = ""  # name of the session
         self.group = {}
         if sort_key not in ("actual_ip", "address", "id_", "name_generic"):
@@ -125,6 +142,15 @@ class Chat(BaseAddClass):
     def __init__(self, *, name, members: MemberGroup = None,
                  display_name: str = "", info: str = "",
                  identification_attribute: str = _identify_attr_default):
+        """
+
+        :param name: the identifying name
+        :param members: class MemberGroup (a list of members)
+        :param display_name: name that is shown
+        :param info: what specific detailed information have the group
+        :param identification_attribute: this is only useful to change,
+        when you want to catch a specific chat with one attribute
+        """
         if getattr(self, "_BaseAddClass__initialised", False):
             return
         super().__init__(self)
@@ -142,6 +168,16 @@ class Chat(BaseAddClass):
 class Message:
     def __init__(self, text: bytes, sender: Member, chat: Chat,
                  to_member: Member = None, m_type="msg", _timestamp: str = ""):
+        """
+
+        :param text: the content of the message
+        :param sender: the autor of the message
+        :param chat: for what chat is this message for
+        :param to_member: the receiver
+        :param m_type: msg = Text, cmd = Commands, tmp = Temporary,
+        data = Data like pictures,
+        :param _timestamp:
+        """
         if to_member is None:
             to_member = Member(id_=0)
         self.text = text
@@ -194,15 +230,17 @@ class Filecheck:
         return True
 
 
-def auto_linebreak(text: str, max_char_in_line: int, max_lines: int = None, split_char: str = None) -> str:
+def auto_linebreak_with_linebreak_info(text: str, max_char_in_line: int, max_lines: int = None,
+                                       split_char: str = None) -> (str, list):
     """
     add linebreaks into a sting after a specific length of a line
     :param text: the raw text
     :param max_char_in_line: how many chars fit maximum in the line
     :param max_lines: if a line maximum is there, it would be marked with ...
     :param split_char: to split words that are separated with a special char like space
-    :return:
+    :return: the text with linebreaks, and a list with: (line, char_of_linebreak)
     """
+    linebreak_points = []
     simple_text = text.split("\n")
     for text_line_count, text_line in enumerate(simple_text):
         new_text_line = ""
@@ -213,26 +251,50 @@ def auto_linebreak(text: str, max_char_in_line: int, max_lines: int = None, spli
                 new_text_line += text_part + "\n"
                 text_char += max_char_in_line
                 continue
+            if split_char is None:
+                new_text_line += text_part + "\n"
+                text_char += max_char_in_line
+                linebreak_points.append((text_line_count, text_char))
+                continue
             text_part = text_part.rsplit(split_char, 1)
             if len(text_part) == 1:
                 new_text_line += text_part[0] + "\n"
                 text_char += max_char_in_line
+                linebreak_points.append((text_line_count, text_char))
                 continue
             new_text_line += text_part[0] + "\n"
             text_char += len(text_part[0]) + 1
+            linebreak_points.append((text_line_count, text_char))
 
         if text_line != "":
             new_text_line = new_text_line[:-1]
         simple_text[text_line_count] = new_text_line
 
     if max_lines is None:
-        return "\n".join(simple_text)
+        return "\n".join(simple_text), linebreak_points
 
     text = "\n".join(simple_text).split("\n")
     if len(text) > max_lines:
         text = text[0:max_lines]
         text[max_lines - 1] = "..."
-    return "\n".join(text)
+    return "\n".join(text), linebreak_points
+
+
+def auto_linebreak(text: str, max_char_in_line: int, max_lines: int = None, split_char: str = None) -> str:
+    """
+    add linebreaks into a sting after a specific length of a line
+    :param text: the raw text
+    :param max_char_in_line: how many chars fit maximum in the line
+    :param max_lines: if a line maximum is there, it would be marked with ...
+    :param split_char: to split words that are separated with a special char like space
+    :return: the text with linebreaks
+    """
+    return auto_linebreak_with_linebreak_info(
+        text=text,
+        max_char_in_line=max_char_in_line,
+        max_lines=max_lines,
+        split_char=split_char
+    )[0]
 
 
 class Messenger:
