@@ -1,4 +1,4 @@
-## This is outdatet, visit https://codeberg.org/disendata
+## This is outdated, visit https://codeberg.org/disendata
 Now the future goal is to build an interface for many information services and implement a self designed connector.
 
 ----
