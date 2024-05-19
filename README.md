@@ -1,3 +1,8 @@
+## This is outdatet, visit https://codeberg.org/disendata
+Now the future goal is to build an interface for many information services and implement a self designed connector.
+
+----
+----
 # disendata
 It is developed in [Python3.10](https://www.python.org/downloads/release/python-3104/)
 (libraries: os, sockets, curses, sqlite, time, threading)
